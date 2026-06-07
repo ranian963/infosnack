@@ -1,0 +1,5 @@
+
+> infosnack-frontend@0.1.0 generate:api /Users/chester/dev/infosnack/frontend
+> node scripts/generate-api-client.mjs
+
+generated /Users/chester/dev/infosnack/frontend/src/lib/api/generated.ts

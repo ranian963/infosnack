@@ -1,0 +1,24 @@
+
+> infosnack-frontend@0.1.0 dev /Users/chester/dev/infosnack/frontend
+> next dev --port 3011
+
+▲ Next.js 16.2.7 (Turbopack)
+- Local:         http://localhost:3011
+- Network:       http://192.168.129.57:3011
+- Environments: .env.local
+✓ Ready in 865ms
+
+○ Compiling / ...
+ GET / 200 in 12.1s (next.js: 10.7s, application-code: 1460ms)
+
+
+
+
+
+
+
+
+
+
+
+

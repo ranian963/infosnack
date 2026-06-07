@@ -1,0 +1,5 @@
+
+> infosnack-frontend@0.1.0 lint /Users/chester/dev/infosnack/frontend
+> biome check .
+
+Checked 50 files in 276ms. No fixes applied.

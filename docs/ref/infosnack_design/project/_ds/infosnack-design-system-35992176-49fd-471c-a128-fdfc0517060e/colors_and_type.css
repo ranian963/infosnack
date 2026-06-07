@@ -1,0 +1,295 @@
+/* =========================================================
+   InfoSnack — Colors & Type tokens
+   Korean startup. "Bite-sized info as a snack."
+   Playful, warm, friendly. Cookie + snack-bag visual DNA.
+   ========================================================= */
+
+/* ---------- Webfonts ---------- */
+/* Display: Fredoka — chunky rounded letterforms, echoes the cookie-letter logo */
+/* Korean: Gaegu + Jua — playful handwritten + cartoon poster face for 인포스낵 */
+/* Body EN: Nunito — rounded, friendly, readable at small sizes */
+/* Mono: JetBrains Mono — for code/data, tuned to feel soft next to Nunito */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Jua&family=Gaegu:wght@400;700&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* =========================================================
+     COLOR — PRIMITIVES
+     Built from the logo palette:
+       - Sky Blue: the snack-bag wrapper + Korean outline
+       - Cookie: warm dough yellow of the cookie letters
+       - Choc Chip: the dark brown chips speckled across
+       - Lemon: the little yellow dots floating in the bag
+  ========================================================= */
+
+  /* Sky Blue (primary) — PRD canonical */
+  --sky-50:  #EAF6FF;
+  --sky-100: #CFEBFF;
+  --sky-200: #A5DAFF;
+  --sky-300: #6FC3FB;
+  --sky-400: #36AEF4;
+  --sky-500: #18AEF6;   /* PRD Primary Blue */
+  --sky-light: #19AFF7; /* PRD Primary Blue (lighter) */
+  --sky-dark:  #16AAF1; /* PRD Primary Blue (darker) — hover/active */
+  --sky-600: #1784C8;
+  --sky-700: #135FA0;
+  --sky-800: #0E4578;
+  --sky-900: #082B4D;
+
+  /* Cookie / Snack Yellow — PRD canonical */
+  --cookie-50:  #FFFBE4;
+  --cookie-100: #FFF4B8;
+  --cookie-200: #FDE88A;
+  --cookie-300: #FCDF6E;
+  --cookie-400: #FBDB5B;   /* PRD Snack Yellow */
+  --cookie-500: #F9D854;   /* PRD Snack Gold */
+  --cookie-600: #E0BE3E;
+  --cookie-700: #AD902A;
+  --cookie-800: #6E5A18;
+
+  /* Chocolate Chip / Snack Brown — PRD canonical */
+  --choc-300: #C7B884;
+  --choc-400: #A38F52;   /* PRD Snack Brown — cookie outline */
+  --choc-500: #8C7A42;
+  --choc-600: #776C34;   /* PRD Brown Dark */
+  --choc-700: #4D4520;
+  --choc-800: #2E2912;
+
+  /* Neutrals — PRD canonical: White / Gray Light / Gray / Gray Dark
+     Extended with warm paper tints for branded surfaces. */
+  --white:      #FFFFFF;    /* PRD White */
+  --gray-light: #F5F5F5;    /* PRD Gray Light — card bg */
+  --gray:       #9E9E9E;    /* PRD Gray */
+  --gray-dark:  #333333;    /* PRD Gray Dark — body text */
+
+  --paper-0:   #FFFFFF;
+  --paper-50:  #FFFDF8;   /* soft warm page bg for brand surfaces */
+  --paper-100: #F5F5F5;   /* = gray-light (PRD card bg) */
+  --paper-200: #EDEDED;
+  --paper-300: #D9D9D9;
+  --paper-400: #9E9E9E;   /* = gray */
+  --paper-500: #6B6B6B;
+  --paper-600: #4A4A4A;
+  --paper-700: #333333;   /* = gray-dark */
+  --paper-800: #1E1E1E;
+  --paper-900: #0F0F0F;
+
+  /* Semantic / status (kept candy-bright, matches brand energy) */
+  --success: #2FB56A;
+  --success-bg: #E4F7EC;
+  --warning: #F5B037;     /* = cookie-400 */
+  --warning-bg: #FFF2D6;
+  --danger:  #E54B4B;     /* cherry/strawberry */
+  --danger-bg: #FFE3E3;
+  --info:    #1E9BE6;     /* = sky-500 */
+  --info-bg: #EAF6FF;
+
+  /* =========================================================
+     COLOR — SEMANTIC
+  ========================================================= */
+  --brand:           var(--sky-500);          /* #18AEF6 */
+  --brand-hover:     var(--sky-dark);         /* #16AAF1 */
+  --brand-press:     var(--sky-700);
+  --brand-on:        #FFFFFF;
+  --accent:          var(--cookie-400);       /* #FBDB5B — snack yellow */
+  --accent-on:       var(--choc-600);         /* #776C34 */
+
+  --bg:              var(--white);            /* PRD: white */
+  --bg-elev:         var(--white);
+  --bg-sunken:       var(--gray-light);       /* PRD: #F5F5F5 card bg */
+  --bg-brand:        var(--sky-500);
+  --bg-inverse:      var(--gray-dark);
+
+  --fg1:             var(--gray-dark);        /* PRD body text #333333 */
+  --fg2:             #4A4A4A;
+  --fg3:             var(--gray);             /* #9E9E9E muted */
+  --fg4:             #BDBDBD;                 /* disabled / placeholder */
+  --fg-on-brand:     #FFFFFF;
+  --fg-on-accent:    var(--choc-600);
+  --fg-inverse:      var(--white);
+
+  --border:          #E5E5E5;
+  --border-strong:   #D9D9D9;
+  --border-brand:    var(--sky-400);
+  --border-ink:      var(--choc-600);         /* cookie outline brown */
+
+  --focus-ring:      var(--sky-400);
+
+  /* =========================================================
+     TYPOGRAPHY — FAMILIES
+  ========================================================= */
+  --font-display:    'Fredoka', 'Jua', system-ui, sans-serif;  /* chunky rounded */
+  --font-display-kr: 'Jua', 'Fredoka', sans-serif;             /* KR poster face */
+  --font-hand-kr:    'Gaegu', 'Jua', cursive;                  /* handwritten KR */
+  --font-body:       'Nunito', 'Fredoka', system-ui, -apple-system, sans-serif;
+  --font-mono:       'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Type scale — compact, snack-bite sized steps */
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 16px;
+  --fs-md:   18px;
+  --fs-lg:   20px;
+  --fs-xl:   24px;
+  --fs-2xl:  30px;
+  --fs-3xl:  38px;
+  --fs-4xl:  48px;
+  --fs-5xl:  64px;
+  --fs-6xl:  84px;
+
+  --lh-tight:  1.05;
+  --lh-snug:   1.2;
+  --lh-normal: 1.45;
+  --lh-loose:  1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.08em;
+
+  /* =========================================================
+     SHAPE — radii, borders, shadows
+     InfoSnack skews to generous rounding (cookies are round) and
+     a single cartoon "ink outline" that mimics the logo stroke.
+  ========================================================= */
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-2xl: 36px;
+  --radius-pill: 999px;
+
+  --border-w:   1.5px;
+  --border-w-bold: 3px;       /* cartoon outline weight */
+
+  /* Soft pillow shadows — like snacks sitting on a counter */
+  --shadow-xs: 0 1px 2px rgba(35, 23, 13, 0.06);
+  --shadow-sm: 0 2px 6px rgba(35, 23, 13, 0.08);
+  --shadow-md: 0 6px 16px rgba(35, 23, 13, 0.10);
+  --shadow-lg: 0 14px 32px rgba(35, 23, 13, 0.14);
+  --shadow-xl: 0 24px 56px rgba(35, 23, 13, 0.18);
+
+  /* Signature "hard drop" shadow — sits like a sticker on paper */
+  --shadow-sticker: 3px 4px 0 var(--choc-600);
+  --shadow-sticker-sm: 2px 2px 0 var(--choc-600);
+
+  /* =========================================================
+     SPACING — 4pt grid
+  ========================================================= */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Motion — snappy with a tiny bounce; snacks are perky */
+  --ease-snack: cubic-bezier(0.34, 1.56, 0.64, 1);  /* overshoots a touch */
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast:   120ms;
+  --dur-med:    220ms;
+  --dur-slow:   360ms;
+}
+
+/* =========================================================
+   BASE RESET-ish
+========================================================= */
+html, body {
+  background: var(--bg);
+  color: var(--fg1);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================
+   SEMANTIC TEXT STYLES (use as classes)
+========================================================= */
+.h-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-6xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg1);
+}
+.h-display-kr {
+  font-family: var(--font-display-kr);
+  font-weight: 400;
+  font-size: var(--fs-6xl);
+  line-height: var(--lh-tight);
+  color: var(--fg1);
+}
+.h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-4xl);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+}
+.h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-snug);
+}
+.h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-snug);
+}
+.h4 {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-snug);
+}
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--brand);
+}
+.p, p.body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  color: var(--fg2);
+}
+.p-lg {
+  font-size: var(--fs-md);
+  line-height: var(--lh-loose);
+  color: var(--fg2);
+}
+.caption {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  color: var(--fg3);
+}
+.hand {
+  font-family: var(--font-hand-kr);
+  font-weight: 700;
+  color: var(--brand);
+}
+.code, code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  color: var(--choc-600);
+}

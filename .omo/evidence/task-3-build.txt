@@ -1,0 +1,48 @@
+
+> infosnack-frontend@0.1.0 build /Users/chester/dev/infosnack/frontend
+> next build
+
+▲ Next.js 16.2.7 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 21.4s
+  Running TypeScript ...
+  Finished TypeScript in 18.1s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/19) ...
+  Generating static pages using 7 workers (4/19) 
+  Generating static pages using 7 workers (9/19) 
+  Generating static pages using 7 workers (14/19) 
+✓ Generating static pages using 7 workers (19/19) in 2.3s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /capture
+├ ○ /chat
+├ ○ /digests
+├ ƒ /digests/[digestId]
+├ ƒ /digests/[digestId]/curation
+├ ○ /library
+├ ƒ /library/[contentId]
+├ ○ /login
+├ ○ /register/invite
+├ ○ /search
+├ ○ /settings/credentials
+├ ○ /settings/export
+├ ○ /settings/notifications
+├ ○ /settings/profile
+├ ○ /settings/webhooks
+├ ○ /settings/workspace
+├ ƒ /shares/[token]
+├ ○ /sources
+├ ƒ /sources/[sourceId]
+└ ○ /sources/new
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

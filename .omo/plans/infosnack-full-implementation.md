@@ -224,7 +224,7 @@ Wave 6: Tasks 22-24. Observability, perf/security, docs/runbooks, release dry ru
 
   **Commit**: YES | Message: `build(backend): scaffold FastAPI foundation` | Files: `backend/**`, `backend/.env` symlink or setup docs.
 
-- [ ] 3. Frontend Scaffold, i18n, Design Guard, and OpenAPI Client
+- [x] 3. Frontend Scaffold, i18n, Design Guard, and OpenAPI Client
 
   **What to do**: Create `frontend/` with Next.js 16 App Router, React 19, TypeScript strict, TailwindCSS v4, shadcn/ui baseline, next-intl with `messages/ko.json` and `messages/en.json`, TanStack Query provider, Jotai provider, generated OpenAPI client from the chosen contract path, lint scripts for i18n/design-system, and placeholder routes for all current-release paths.
   **Must NOT do**: Do not hardcode user-visible copy in TS/TSX. Do not create marketing landing pages. Do not use Zustand or raw response assumptions.

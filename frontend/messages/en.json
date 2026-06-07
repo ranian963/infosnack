@@ -1,0 +1,139 @@
+{
+  "brand": {
+    "name": "InfoSnack",
+    "logoAlt": "InfoSnack logo",
+    "mascotAlt": "InfoSnack snack bag mascot"
+  },
+  "shell": {
+    "sidebarLabel": "InfoSnack primary screens",
+    "status": "A scaffold that connects current-release routes and the API contract first."
+  },
+  "common": {
+    "notFoundTitle": "Screen not found",
+    "notFoundBody": "The requested path is not part of the current-release route set.",
+    "goLibrary": "Go to library"
+  },
+  "placeholder": {
+    "statusRegion": "Screen status",
+    "apiLabel": "API client",
+    "apiValue": "Generated from the OpenAPI contract",
+    "contractLabel": "Screen contract",
+    "guardLabel": "Quality guards",
+    "guardValue": "i18n and design guards enabled",
+    "mapRegion": "Current-release routes",
+    "mapTitle": "Route index",
+    "mapDescription": "Every current-release path from the screen spec is available."
+  },
+  "routes": {
+    "home": {
+      "nav": "Home",
+      "title": "InfoSnack gallery shell",
+      "description": "The first screen for dashboard, quick capture, and library entry points."
+    },
+    "login": {
+      "nav": "Login",
+      "title": "Login",
+      "description": "The screen for cookie auth, CSRF, and workspace selection flows."
+    },
+    "invite": {
+      "nav": "Invite signup",
+      "title": "Invite signup",
+      "description": "The screen for invite-token signup and initial profile setup."
+    },
+    "capture": {
+      "nav": "Capture",
+      "title": "Content capture",
+      "description": "The capture surface for URLs, YouTube, text, and files."
+    },
+    "library": {
+      "nav": "Library",
+      "title": "Library",
+      "description": "The screen for saved content cards, filters, and collections."
+    },
+    "contentDetail": {
+      "nav": "Content detail",
+      "title": "Content detail",
+      "description": "The screen for summaries, source text, metadata, and AI question entry."
+    },
+    "sources": {
+      "nav": "Sources",
+      "title": "Sources",
+      "description": "The screen for managing automated sources and run status."
+    },
+    "sourceNew": {
+      "nav": "Add source",
+      "title": "Add source",
+      "description": "The screen for registering and previewing a new automated source."
+    },
+    "sourceDetail": {
+      "nav": "Source detail",
+      "title": "Source detail",
+      "description": "The screen for diagnostics, history, and source editing actions."
+    },
+    "search": {
+      "nav": "Search",
+      "title": "Hybrid search",
+      "description": "The screen for keyword and embedding search results."
+    },
+    "chat": {
+      "nav": "AI chat",
+      "title": "AI chat",
+      "description": "The screen for asking and answering questions with library context."
+    },
+    "digests": {
+      "nav": "Digests",
+      "title": "Digests",
+      "description": "The screen for scheduled summaries and distribution status."
+    },
+    "digestDetail": {
+      "nav": "Digest detail",
+      "title": "Digest detail",
+      "description": "The screen for digest body, share state, and delivery metadata."
+    },
+    "digestCuration": {
+      "nav": "Curation",
+      "title": "Digest curation",
+      "description": "The screen for reviewing recommendations and confirming the final digest."
+    },
+    "publicShare": {
+      "nav": "Share",
+      "title": "Public share",
+      "description": "The read-only public screen accessed by token."
+    },
+    "admin": {
+      "nav": "Admin",
+      "title": "Admin",
+      "description": "The screen for operational status, job queues, and audit events."
+    },
+    "settingsProfile": {
+      "nav": "Profile",
+      "title": "Profile settings",
+      "description": "The screen for user name, language, and account details."
+    },
+    "settingsWorkspace": {
+      "nav": "Workspace",
+      "title": "Workspace settings",
+      "description": "The screen for members, roles, and workspace policy."
+    },
+    "settingsCredentials": {
+      "nav": "Credentials",
+      "title": "Credential settings",
+      "description": "The screen for safely managing AI and external service credentials."
+    },
+    "settingsNotifications": {
+      "nav": "Notifications",
+      "title": "Notification settings",
+      "description": "The screen for digest and job notification preferences."
+    },
+    "settingsExport": {
+      "nav": "Export",
+      "title": "Export settings",
+      "description": "The screen for export requests and result status."
+    },
+    "settingsWebhooks": {
+      "nav": "Webhooks",
+      "title": "Webhook settings",
+      "description": "The screen for external targets, signing secrets, and delivery policy."
+    }
+  }
+}
