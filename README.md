@@ -13,6 +13,10 @@ InfoSnack is a web application for collecting team knowledge, searching it with 
 
 InfoSnack is built for teams that need reliable knowledge capture without losing source traceability. Every AI answer is designed to include citations, every workspace action respects role-based access controls, and every automation is governed by auditable API contracts rather than hidden one-off scripts.
 
+## Product Preview
+
+![InfoSnack desktop route shell](assets/screenshots/route-shell-desktop.png)
+
 ## Quick Answers
 
 ### What is InfoSnack?
