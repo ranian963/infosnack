@@ -1,0 +1,8 @@
+## tmux sessions
+TMUX_CLEANUP_STATUS=PASS
+
+## temporary files
+TMP_CLEANUP_STATUS=PASS
+
+## verifier final smoke
+PASS baseline

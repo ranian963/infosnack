@@ -10,7 +10,7 @@
 |------|----------|-------|
 | Current PRD | `InfoSnack_PRD_v3.0.md` | Product, architecture, security, release gates |
 | Screen/UI contract | `InfoSnack_화면설계.md` | Route map, screen states, UI actions |
-| API contract | `openapi/infosnack-api.yaml` | OpenAPI 3.1 schema and endpoint authority |
+| API contract | `docs/openapi/infosnack-api.yaml` | OpenAPI 3.1 schema and endpoint authority |
 | Auto collection idea doc | `InfoSnack_자동수집_기획서_v1.0.md` | Planning reference; reconcile with PRD before treating as current |
 | Historical PRDs | `backup/` | Archive only |
 
@@ -20,7 +20,7 @@
 - Screen spec changes that alter product meaning must be reflected in the PRD and OpenAPI.
 - OpenAPI changes that alter product meaning must be reflected in the PRD and screen spec.
 - Completion is invalid if only one of PRD, screen spec, or OpenAPI moves while the others need the same semantic update.
-- OpenAPI path in this checkout is `docs/openapi/infosnack-api.yaml`; older text may refer to future `openapi/infosnack-api.yaml`.
+- OpenAPI path in this checkout is `docs/openapi/infosnack-api.yaml`; keep PRD, screen spec, and scripts aligned to this path.
 
 ## CONVENTIONS
 
