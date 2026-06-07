@@ -19,7 +19,9 @@ class Settings(BaseSettings):
 
     app_env: str = "local"
     app_name: str = "InfoSnack API"
-    database_url: str = "postgresql+asyncpg://infosnack:infosnack@localhost:5432/infosnack"
+    database_url: str = (
+        "postgresql+asyncpg://infosnack:infosnack@localhost:5432/infosnack"
+    )
     redis_url: str = "redis://localhost:6379/0"
     s3_endpoint: str = "http://localhost:9000"
     s3_bucket: str = "infosnack-local"

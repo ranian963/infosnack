@@ -1,0 +1,16 @@
+DROP DATABASE
+NOTICE:  database "infosnack_task4_tmux_qa" does not exist, skipping
+CREATE DATABASE
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 20260607_0001
+pg_trgm
+pgcrypto
+vector
+content_embeddings
+contents
+job_runs
+users
+webhook_subscriptions
+workspaces
+TASK4_TMUX_STATUS=0

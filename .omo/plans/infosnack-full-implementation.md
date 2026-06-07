@@ -263,7 +263,7 @@ Wave 6: Tasks 22-24. Observability, perf/security, docs/runbooks, release dry ru
 
   **Commit**: YES | Message: `build(frontend): scaffold app router and contract client` | Files: `frontend/**`.
 
-- [ ] 4. Database Schema, Alembic Migrations, and Repository Foundations
+- [x] 4. Database Schema, Alembic Migrations, and Repository Foundations
 
   **What to do**: Implement SQLAlchemy models, Alembic migrations, repositories, and integration tests for Appendix A tables: auth/workspaces, credentials, captures/contents/assets, search/RAG, sources, digest/share/export/webhook/notification, job/audit/usage. Enable pgvector type support and GIN/trigram/vector indexes. Establish repository helpers that always scope workspace-owned queries.
   **Must NOT do**: Do not run long backfills in migrations. Do not create duplicate status enums outside Appendix C.
