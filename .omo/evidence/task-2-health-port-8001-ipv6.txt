@@ -1,0 +1,37 @@
+## ipv6 port 8001 curl
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   112  100   112    0     0  26781      0 --:--:-- --:--:-- --:--:-- 28000
+HTTP/1.1 200 OK
+date: Sun, 07 Jun 2026 05:18:49 GMT
+server: uvicorn
+content-length: 112
+content-type: application/json
+x-request-id: c02f68d0-2bfd-4cc7-aa8f-0ecdbbb48c23
+
+{"status":"ok","dependencies":{"api":"ok","database":"degraded","redis":"degraded","object_storage":"degraded"}}
+## tmux transcript
+INFO:     Started server process [56850]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://[::1]:8001 (Press CTRL+C to quit)
+INFO:     ::1:49332 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     ::1:49333 - "GET /api/health HTTP/1.1" 200 OK
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

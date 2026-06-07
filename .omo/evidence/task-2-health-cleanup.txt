@@ -1,0 +1,20 @@
+## tmux sessions
+ulw-qa-task-2=PASS
+ulw-qa-task-2-restart=PASS
+ulw-qa-task-2-guard=PASS
+ulw-qa-task-2-ipv6=PASS
+
+## ports
+PORT_8011=PASS
+PORT_8012=PASS
+PORT_8013=PASS
+PORT_8001_INFOSNACK_CLEANUP=PASS
+
+## temp files
+TASK2_TMP_CLEANUP=PASS
+
+## generated caches
+PYCACHE_CLEANUP=PASS
+
+## final generated cache cleanup
+FINAL_PYCACHE_CLEANUP=PASS
