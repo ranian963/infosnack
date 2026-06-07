@@ -1,0 +1,50 @@
+## health curl
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   112  100   112    0     0  48275      0 --:--:-- --:--:-- --:--:-- 56000
+HTTP/1.1 200 OK
+date: Sun, 07 Jun 2026 05:17:12 GMT
+server: uvicorn
+content-length: 112
+content-type: application/json
+x-request-id: eff2f77c-4191-4ef9-b63d-4f05bbea2391
+
+{"status":"ok","dependencies":{"api":"ok","database":"degraded","redis":"degraded","object_storage":"degraded"}}
+## cors guard curl
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   112  100   112    0     0  50678      0 --:--:-- --:--:-- --:--:-- 56000
+HTTP/1.1 200 OK
+date: Sun, 07 Jun 2026 05:17:12 GMT
+server: uvicorn
+content-length: 112
+content-type: application/json
+access-control-allow-credentials: true
+x-request-id: 7c07ef40-ba87-4892-a9a6-a51d1dee13a6
+
+{"status":"ok","dependencies":{"api":"ok","database":"degraded","redis":"degraded","object_storage":"degraded"}}
+## tmux transcript
+INFO:     Started server process [48597]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65499 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65500 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65501 - "GET /api/health HTTP/1.1" 200 OK
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

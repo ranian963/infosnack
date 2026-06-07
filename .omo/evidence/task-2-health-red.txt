@@ -1,0 +1,24 @@
+Installed 3 packages in 6ms
+ERROR: found no collectors for /Users/chester/dev/infosnack/backend/tests/test_health.py::test_health_reports_service_and_dependencies
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+____________________ ERROR collecting tests/test_health.py _____________________
+ImportError while importing test module '/Users/chester/dev/infosnack/backend/tests/test_health.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_health.py:3: in <module>
+    from app.main import app
+E   ModuleNotFoundError: No module named 'app'
+=========================== short test summary info ============================
+ERROR tests/test_health.py
+=============================== 1 error in 0.34s ===============================

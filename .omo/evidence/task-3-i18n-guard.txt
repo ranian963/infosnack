@@ -1,0 +1,13 @@
+
+> infosnack-frontend@0.1.0 lint:i18n /Users/chester/dev/infosnack/frontend
+> node scripts/lint-i18n.mjs
+
+hardcoded user-visible copy found
+/Users/chester/dev/infosnack/frontend/src/components/__qa_i18n_guard_fixture.tsx: visible JSX literal "하드코딩 Hello"
+ ELIFECYCLE  Command failed with exit code 1.
+
+> infosnack-frontend@0.1.0 lint:i18n /Users/chester/dev/infosnack/frontend
+> node scripts/lint-i18n.mjs
+
+PASS i18n
+I18N_RECHECK_STATUS=0

@@ -1,0 +1,129 @@
+## task-3 adversarial probes
+
+### stale state: generated client idempotency
+
+> infosnack-frontend@0.1.0 generate:api /Users/chester/dev/infosnack/frontend
+> node scripts/generate-api-client.mjs
+
+generated /Users/chester/dev/infosnack/frontend/src/lib/api/generated.ts
+
+> infosnack-frontend@0.1.0 generate:api /Users/chester/dev/infosnack/frontend
+> node scripts/generate-api-client.mjs
+
+generated /Users/chester/dev/infosnack/frontend/src/lib/api/generated.ts
+GENERATED_HASH_BEFORE=c08d047f66822c37a6783e2312ec4e21667226549b93bfe0df99e7ae90fd8bed
+GENERATED_HASH_MID=c08d047f66822c37a6783e2312ec4e21667226549b93bfe0df99e7ae90fd8bed
+GENERATED_HASH_AFTER=c08d047f66822c37a6783e2312ec4e21667226549b93bfe0df99e7ae90fd8bed
+STALE_STATE_STATUS=PASS
+
+### hung or long command: bounded i18n lint
+
+> infosnack-frontend@0.1.0 lint:i18n /Users/chester/dev/infosnack/frontend
+> node scripts/lint-i18n.mjs
+
+PASS i18n
+HUNG_COMMAND_STATUS=PASS
+
+### flaky tests: repeat unit suite three times
+RUN=1
+
+> infosnack-frontend@0.1.0 test /Users/chester/dev/infosnack/frontend
+> vitest run
+
+
+ RUN  v4.1.8 /Users/chester/dev/infosnack/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  15:04:29
+   Duration  294ms (transform 89ms, setup 0ms, import 155ms, tests 8ms, environment 0ms)
+
+RUN=2
+
+> infosnack-frontend@0.1.0 test /Users/chester/dev/infosnack/frontend
+> vitest run
+
+
+ RUN  v4.1.8 /Users/chester/dev/infosnack/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  15:04:30
+   Duration  426ms (transform 114ms, setup 0ms, import 214ms, tests 11ms, environment 0ms)
+
+RUN=3
+
+> infosnack-frontend@0.1.0 test /Users/chester/dev/infosnack/frontend
+> vitest run
+
+
+ RUN  v4.1.8 /Users/chester/dev/infosnack/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  15:04:33
+   Duration  2.32s (transform 1.23s, setup 0ms, import 1.90s, tests 33ms, environment 1ms)
+
+FLAKY_TEST_STATUS=PASS
+
+### dirty worktree
+?? .omo/boulder.json
+?? .omo/evidence/task-3-adversarial.txt
+?? .omo/evidence/task-3-build.txt
+?? .omo/evidence/task-3-coverage.txt
+?? .omo/evidence/task-3-design-guard-reject.txt
+?? .omo/evidence/task-3-design-system.txt
+?? .omo/evidence/task-3-dev-server-tmux.txt
+?? .omo/evidence/task-3-frontend-green.txt
+?? .omo/evidence/task-3-frontend-red.txt
+?? .omo/evidence/task-3-generate-api.txt
+?? .omo/evidence/task-3-i18n-green.txt
+?? .omo/evidence/task-3-i18n-guard.txt
+?? .omo/evidence/task-3-lint.txt
+?? .omo/evidence/task-3-route-shell-browser.json
+?? .omo/evidence/task-3-route-shell-browser.txt
+?? .omo/evidence/task-3-test.txt
+?? .omo/evidence/task-3-typecheck.txt
+?? docs/ref/
+?? frontend/
+?? scripts/tests/test_frontend_scaffold.sh
+!! .DS_Store
+!! ".InfoSnack_\355\231\224\353\251\264\354\204\244\352\263\204.md.swp"
+!! .env
+!! .omo/.DS_Store
+!! backend/.env
+!! backend/.pytest_cache/
+!! backend/.ruff_cache/
+!! backend/.venv/
+!! docker/.DS_Store
+!! docker/postgres/.DS_Store
+!! docs/.DS_Store
+!! docs/backup/.DS_Store
+!! docs/ref/.DS_Store
+!! docs/ref/infosnack_design/.DS_Store
+!! docs/ref/infosnack_design/project/.DS_Store
+!! frontend/.env.local
+!! frontend/.next/
+!! frontend/coverage/
+!! frontend/node_modules/
+!! frontend/tsconfig.tsbuildinfo
+!! output/
+DIRTY_WORKTREE_STATUS=PASS
+
+### prompt injection
+PROMPT_INJECTION_STATUS=NOT_APPLICABLE: Task 3 consumes trusted local contract/docs and no model-facing user content surface.
+
+### cancel/resume
+CANCEL_RESUME_STATUS=PASS: plan and ledger were reread at turn start; overactive task3 subagents were closed before root-owned implementation continued.
+
+### misleading success output
+BROWSER_ROUTE_STATUS=PASS
+ROUTE_COUNT=22
+MOBILE_OVERFLOW_X=false
+DESKTOP_SCREENSHOT=/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-desktop.png
+MOBILE_SCREENSHOT=/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-mobile.png
+MISLEADING_SUCCESS_STATUS=PASS: browser route JSON required 22 clicked routes, route ids, no horizontal overflow, plus file-verified screenshots.
+

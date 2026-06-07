@@ -1,0 +1,5 @@
+BROWSER_ROUTE_STATUS=PASS
+ROUTE_COUNT=22
+MOBILE_OVERFLOW_X=false
+DESKTOP_SCREENSHOT=/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-desktop.png
+MOBILE_SCREENSHOT=/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-mobile.png

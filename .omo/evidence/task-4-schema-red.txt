@@ -1,0 +1,33 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 2 items / 2 errors
+
+==================================== ERRORS ====================================
+______________ ERROR collecting tests/db/test_schema_contract.py _______________
+ImportError while importing test module '/Users/chester/dev/infosnack/backend/tests/db/test_schema_contract.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/db/test_schema_contract.py:5: in <module>
+    from app.models import Base
+E   ModuleNotFoundError: No module named 'app.models'
+_________ ERROR collecting tests/repositories/test_workspace_scope.py __________
+ImportError while importing test module '/Users/chester/dev/infosnack/backend/tests/repositories/test_workspace_scope.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/repositories/test_workspace_scope.py:5: in <module>
+    from app.models import Content
+E   ModuleNotFoundError: No module named 'app.models'
+=========================== short test summary info ============================
+ERROR tests/db/test_schema_contract.py
+ERROR tests/repositories/test_workspace_scope.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 2 errors in 0.16s ===============================

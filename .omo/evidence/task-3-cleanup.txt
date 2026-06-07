@@ -1,0 +1,6 @@
+## task-3 cleanup receipt
+BROWSER_TAB_CLEANUP=CLOSED
+TMUX_SESSION_ABSENT=PASS
+PORT_3011_CLEANUP=PASS
+TMP_CLEANUP=PASS
+IGNORED_BUILD_OUTPUT=.next coverage tsconfig.tsbuildinfo node_modules output retained under ignore policy

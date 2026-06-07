@@ -1,0 +1,31 @@
+
+> infosnack-frontend@0.1.0 test:coverage /Users/chester/dev/infosnack/frontend
+> vitest run --coverage
+
+
+ RUN  v4.1.8 /Users/chester/dev/infosnack/frontend
+      Coverage enabled with v8
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  14:50:31
+   Duration  1.02s (transform 145ms, setup 0ms, import 269ms, tests 14ms, environment 2ms)
+
+ % Coverage report from v8
+---------------|---------|----------|---------|---------|-------------------
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---------------|---------|----------|---------|---------|-------------------
+All files      |   45.83 |    18.75 |   28.57 |   43.47 |                   
+ lib           |      25 |        0 |      20 |      20 |                   
+  routes.ts    |      25 |        0 |      20 |      20 | 256-285           
+ lib/api       |    87.5 |       75 |      50 |    87.5 |                   
+  client.ts    |      80 |       75 |      50 |      80 | 18                
+---------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 45.83% ( 11/24 )
+Branches     : 18.75% ( 3/16 )
+Functions    : 28.57% ( 2/7 )
+Lines        : 43.47% ( 10/23 )
+================================================================================

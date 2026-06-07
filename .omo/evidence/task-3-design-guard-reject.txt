@@ -1,0 +1,14 @@
+
+> infosnack-frontend@0.1.0 lint:design-system /Users/chester/dev/infosnack/frontend
+> node scripts/lint-design-system.mjs
+
+design-system guard failed
+/Users/chester/dev/infosnack/frontend/src/components/__qa_design_guard_fixture.tsx: /\brounded-(?:xl|2xl|3xl)\b/
+/Users/chester/dev/infosnack/frontend/src/components/__qa_design_guard_fixture.tsx: /\b(?:bg|text|border)-\[#/u
+ ELIFECYCLE  Command failed with exit code 1.
+
+> infosnack-frontend@0.1.0 lint:design-system /Users/chester/dev/infosnack/frontend
+> node scripts/lint-design-system.mjs
+
+PASS design-system
+DESIGN_RECHECK_STATUS=0

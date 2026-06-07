@@ -1,0 +1,44 @@
+## full pytest
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0, anyio-4.13.0
+collected 2 items
+
+tests/test_health.py ..                                                  [100%]
+
+============================== 2 passed in 0.39s ===============================
+
+## flaky repeat
+RUN=1
+..                                                                       [100%]
+2 passed in 0.40s
+RUN=2
+..                                                                       [100%]
+2 passed in 0.50s
+RUN=3
+..                                                                       [100%]
+2 passed in 0.28s
+
+## stale state and restart probe
+{"status":"ok","dependencies":{"api":"ok","database":"degraded","redis":"degraded","object_storage":"degraded"}}RESTART_PROBE_STATUS=PASS
+
+## malformed origin and misleading success probe
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   112  100   112    0     0  34514      0 --:--:-- --:--:-- --:--:-- 37333
+HTTP/1.1 200 OK
+date: Sun, 07 Jun 2026 05:17:56 GMT
+server: uvicorn
+content-length: 112
+content-type: application/json
+access-control-allow-credentials: true
+x-request-id: 2618f88d-fdb9-49b1-8d8f-05663a5cc835
+
+{"status":"ok","dependencies":{"api":"ok","database":"degraded","redis":"degraded","object_storage":"degraded"}}MALFORMED_ORIGIN_STATUS=PASS
+MISLEADING_SUCCESS_STATUS=PASS
+
+## dirty worktree staged guard
+DIRTY_WORKTREE_STAGED_STATUS=PASS_NO_STAGED_FILES

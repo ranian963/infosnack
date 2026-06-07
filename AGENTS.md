@@ -109,7 +109,7 @@ cd frontend && pnpm test:e2e
 
 ## NOTES
 
-- `AGENTS.md` is currently listed in `.gitignore`; decide intentionally if these knowledge files should be shared through git.
-- The PRD still references a future top-level `openapi/infosnack-api.yaml`, while this checkout has `docs/openapi/infosnack-api.yaml`.
+- `AGENTS.md` knowledge files are intended to be versioned; do not add an ignore rule that hides new project guidance.
+- The active OpenAPI contract path in this checkout is `docs/openapi/infosnack-api.yaml`.
 - Korean doc filenames are stored with decomposed Unicode on disk; use shell completion or `rg --files` rather than hand-typing when scripts are brittle.
 - No LSP codemap exists yet because there is no application source tree in this checkout.

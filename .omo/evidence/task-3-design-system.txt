@@ -1,0 +1,5 @@
+
+> infosnack-frontend@0.1.0 lint:design-system /Users/chester/dev/infosnack/frontend
+> node scripts/lint-design-system.mjs
+
+PASS design-system

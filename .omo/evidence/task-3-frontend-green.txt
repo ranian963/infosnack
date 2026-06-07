@@ -1,0 +1,15 @@
+
+> infosnack-frontend@0.1.0 lint:i18n /Users/chester/dev/infosnack/frontend
+> node scripts/lint-i18n.mjs
+
+PASS i18n
+
+> infosnack-frontend@0.1.0 lint:design-system /Users/chester/dev/infosnack/frontend
+> node scripts/lint-design-system.mjs
+
+PASS design-system
+
+> infosnack-frontend@0.1.0 typecheck /Users/chester/dev/infosnack/frontend
+> tsc --noEmit
+
+PASS frontend scaffold

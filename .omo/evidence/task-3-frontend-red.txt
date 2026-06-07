@@ -1,0 +1,14 @@
+$ cd /Users/chester/dev/infosnack/frontend && pnpm lint
+
+> infosnack-frontend@ lint /Users/chester/dev/infosnack/frontend
+> pnpm lint:i18n && pnpm lint:design-system
+
+
+> infosnack-frontend@ lint:i18n /Users/chester/dev/infosnack/frontend
+> node scripts/lint-i18n.mjs
+
+hardcoded copy found in: /Users/chester/dev/infosnack/frontend/src/app/admin/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/capture/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/chat/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/digests/[digestId]/curation/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/digests/[digestId]/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/digests/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/layout.tsx, /Users/chester/dev/infosnack/frontend/src/app/library/[contentId]/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/library/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/login/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/register/invite/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/search/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/credentials/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/export/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/notifications/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/profile/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/webhooks/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/settings/workspace/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/shares/[token]/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/sources/[sourceId]/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/sources/new/page.tsx, /Users/chester/dev/infosnack/frontend/src/app/sources/page.tsx
+ ELIFECYCLE  Command failed with exit code 1.
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?
+ ELIFECYCLE  Command failed with exit code 1.
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?

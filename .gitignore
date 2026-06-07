@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# Python tools
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+backend/htmlcov/
+
+# uv
+.uv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+package-lock.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.infra
+
+# Credentials / secrets
+token.json
+credentials.json
+*.key
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Testing / coverage
+coverage/
+frontend/coverage/
+playwright-report/
+test-results/
+frontend/playwright-report/
+frontend/test-results/
+frontend/e2e/.auth/
+e2e/.auth/
+
+# Build
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+
+# Editor backups
+*~
+
+# Runtime data
+backend/data/
+backend/data.bak*/
+frontend/.next/
+
+# Local E2E screenshots/videos/traces/raw captures.
+# Use output/e2e-captures/<YYYYMMDD>-<feature>/.
+output/
+
+# Redis dump
+dump.rdb
+
+# Agent / automation workspaces
+/workspace/
+.codex/
+.playwright-mcp/
+.claude/

@@ -1,0 +1,24 @@
+## watchdog guard
+PASS baseline
+WATCHDOG_GUARD_STATUS=0
+
+## flaky repeat
+RUN=1
+PASS baseline
+PASS test_verify_repo_baseline
+RUN=2
+PASS baseline
+PASS test_verify_repo_baseline
+RUN=3
+PASS baseline
+PASS test_verify_repo_baseline
+
+## stale path scan
+STALE_PATH_STATUS=PASS
+
+## misleading success guard
+FAIL secret artifact must not be staged
+MISLEADING_SUCCESS_STATUS=PASS rc=1
+
+## staged status
+NO_STAGED_FILES

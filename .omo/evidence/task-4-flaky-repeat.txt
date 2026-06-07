@@ -1,0 +1,39 @@
+FLAKY_RUN=1
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 7 items
+
+tests/db/test_migration_contract.py ..                                   [ 28%]
+tests/db/test_schema_contract.py ...                                     [ 71%]
+tests/repositories/test_workspace_scope.py ..                            [100%]
+
+============================== 7 passed in 6.53s ===============================
+FLAKY_RUN=2
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 7 items
+
+tests/db/test_migration_contract.py ..                                   [ 28%]
+tests/db/test_schema_contract.py ...                                     [ 71%]
+tests/repositories/test_workspace_scope.py ..                            [100%]
+
+============================== 7 passed in 3.21s ===============================
+FLAKY_RUN=3
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/chester/dev/infosnack/backend
+configfile: pyproject.toml
+plugins: cov-7.1.0, anyio-4.13.0
+collected 7 items
+
+tests/db/test_migration_contract.py ..                                   [ 28%]
+tests/db/test_schema_contract.py ...                                     [ 71%]
+tests/repositories/test_workspace_scope.py ..                            [100%]
+
+============================== 7 passed in 3.76s ===============================

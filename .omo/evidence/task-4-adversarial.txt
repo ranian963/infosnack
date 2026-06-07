@@ -1,0 +1,13 @@
+Task 4 adversarial QA
+
+malformed input: PASS - task-4-malformed-status.txt shows an invalid content status raised check_violation and emitted MALFORMED_STATUS_BLOCKED.
+prompt injection: NOT_APPLICABLE - Task 4 consumes trusted local schema/docs and has no prompt/model execution surface.
+cancel/resume: PASS - plan and ledger were reread at continuation start before Task 4 implementation/verification resumed.
+stale state: PASS - task-4-stale-upgrade.txt shows a second alembic upgrade head completed with status 0 on an already migrated DB.
+dirty worktree: PASS - task-4-git-status.txt captures the dirty/untracked/ignored state before marking the task complete.
+hung or long commands: PASS - task-4-watchdog-scope.txt ran workspace scope tests under a 60 second alarm and completed status 0.
+flaky tests: PASS - task-4-flaky-repeat.txt ran tests/db and tests/repositories three consecutive times successfully.
+misleading success output: PASS - task-4-db-state-proof.txt and task-4-fresh-db.txt query actual pg_extension and information_schema state, not only Alembic logs.
+repeated interruptions: PASS - evidence files persisted under .omo/evidence and plan/ledger remain durable sources of truth.
+
+Known environment note: host localhost:5432 is occupied by existing local Postgres/SSH listeners, so fresh DB QA used a dedicated pgvector container on 127.0.0.1:55432 and removed it during cleanup.

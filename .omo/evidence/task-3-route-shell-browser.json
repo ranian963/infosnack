@@ -1,0 +1,282 @@
+{
+  "baseUrl": "http://127.0.0.1:3011",
+  "routeCount": 22,
+  "results": [
+    {
+      "key": "home",
+      "href": "/",
+      "status": "PASS",
+      "observed": {
+        "heading": "InfoSnack 갤러리 셸",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/",
+        "routeId": "H-01"
+      }
+    },
+    {
+      "key": "login",
+      "href": "/login",
+      "status": "PASS",
+      "observed": {
+        "heading": "로그인",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/login",
+        "routeId": "A-01"
+      }
+    },
+    {
+      "key": "invite",
+      "href": "/register/invite",
+      "status": "PASS",
+      "observed": {
+        "heading": "초대 가입",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/register/invite",
+        "routeId": "A-02"
+      }
+    },
+    {
+      "key": "capture",
+      "href": "/capture",
+      "status": "PASS",
+      "observed": {
+        "heading": "콘텐츠 수집",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/capture",
+        "routeId": "CAP-01"
+      }
+    },
+    {
+      "key": "library",
+      "href": "/library",
+      "status": "PASS",
+      "observed": {
+        "heading": "라이브러리",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/library",
+        "routeId": "L-01"
+      }
+    },
+    {
+      "key": "contentDetail",
+      "href": "/library/sample-content",
+      "status": "PASS",
+      "observed": {
+        "heading": "콘텐츠 상세",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/library/sample-content",
+        "routeId": "L-02"
+      }
+    },
+    {
+      "key": "sources",
+      "href": "/sources",
+      "status": "PASS",
+      "observed": {
+        "heading": "수집처",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/sources",
+        "routeId": "AC-01"
+      }
+    },
+    {
+      "key": "sourceNew",
+      "href": "/sources/new",
+      "status": "PASS",
+      "observed": {
+        "heading": "수집처 추가",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/sources/new",
+        "routeId": "AC-02"
+      }
+    },
+    {
+      "key": "sourceDetail",
+      "href": "/sources/sample-source",
+      "status": "PASS",
+      "observed": {
+        "heading": "수집처 상세",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/sources/sample-source",
+        "routeId": "AC-03"
+      }
+    },
+    {
+      "key": "search",
+      "href": "/search",
+      "status": "PASS",
+      "observed": {
+        "heading": "하이브리드 검색",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/search",
+        "routeId": "SR-01"
+      }
+    },
+    {
+      "key": "chat",
+      "href": "/chat",
+      "status": "PASS",
+      "observed": {
+        "heading": "AI 챗봇",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/chat",
+        "routeId": "C-01"
+      }
+    },
+    {
+      "key": "digests",
+      "href": "/digests",
+      "status": "PASS",
+      "observed": {
+        "heading": "다이제스트",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/digests",
+        "routeId": "D-01"
+      }
+    },
+    {
+      "key": "digestDetail",
+      "href": "/digests/sample-digest",
+      "status": "PASS",
+      "observed": {
+        "heading": "다이제스트 상세",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/digests/sample-digest",
+        "routeId": "D-02"
+      }
+    },
+    {
+      "key": "digestCuration",
+      "href": "/digests/sample-digest/curation",
+      "status": "PASS",
+      "observed": {
+        "heading": "다이제스트 큐레이션",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/digests/sample-digest/curation",
+        "routeId": "D-03"
+      }
+    },
+    {
+      "key": "publicShare",
+      "href": "/shares/sample-token",
+      "status": "PASS",
+      "observed": {
+        "heading": "공개 공유",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/shares/sample-token",
+        "routeId": "P-01"
+      }
+    },
+    {
+      "key": "admin",
+      "href": "/admin",
+      "status": "PASS",
+      "observed": {
+        "heading": "관리자",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/admin",
+        "routeId": "AD-01"
+      }
+    },
+    {
+      "key": "settingsProfile",
+      "href": "/settings/profile",
+      "status": "PASS",
+      "observed": {
+        "heading": "프로필 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/profile",
+        "routeId": "S-01"
+      }
+    },
+    {
+      "key": "settingsWorkspace",
+      "href": "/settings/workspace",
+      "status": "PASS",
+      "observed": {
+        "heading": "워크스페이스 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/workspace",
+        "routeId": "S-02"
+      }
+    },
+    {
+      "key": "settingsCredentials",
+      "href": "/settings/credentials",
+      "status": "PASS",
+      "observed": {
+        "heading": "자격증명 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/credentials",
+        "routeId": "S-03"
+      }
+    },
+    {
+      "key": "settingsNotifications",
+      "href": "/settings/notifications",
+      "status": "PASS",
+      "observed": {
+        "heading": "알림 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/notifications",
+        "routeId": "S-04"
+      }
+    },
+    {
+      "key": "settingsExport",
+      "href": "/settings/export",
+      "status": "PASS",
+      "observed": {
+        "heading": "내보내기 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/export",
+        "routeId": "S-05"
+      }
+    },
+    {
+      "key": "settingsWebhooks",
+      "href": "/settings/webhooks",
+      "status": "PASS",
+      "observed": {
+        "heading": "웹훅 설정",
+        "notFoundHeading": false,
+        "overflowX": false,
+        "path": "/settings/webhooks",
+        "routeId": "S-06"
+      }
+    }
+  ],
+  "mobileCheck": {
+    "heading": "InfoSnack 갤러리 셸",
+    "overflowX": false,
+    "routeId": "H-01",
+    "scrollWidth": 390,
+    "viewportWidth": 390
+  },
+  "status": "PASS",
+  "artifacts": [
+    "/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-desktop.png",
+    "/Users/chester/dev/infosnack/output/e2e-captures/20260607-task-3-route-shell/route-shell-mobile.png"
+  ]
+}

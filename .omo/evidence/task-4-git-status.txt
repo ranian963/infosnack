@@ -1,0 +1,58 @@
+ D backend/alembic/__init__.py
+ M backend/alembic/env.py
+ M backend/app/core/config.py
+ M backend/pyproject.toml
+ M backend/uv.lock
+?? .omo/boulder.json
+?? .omo/evidence/task-4-alembic-upgrade.txt
+?? .omo/evidence/task-4-db-green.txt
+?? .omo/evidence/task-4-db-setup.txt
+?? .omo/evidence/task-4-db-state-proof.txt
+?? .omo/evidence/task-4-flaky-repeat.txt
+?? .omo/evidence/task-4-fresh-db.txt
+?? .omo/evidence/task-4-git-status.txt
+?? .omo/evidence/task-4-malformed-status.txt
+?? .omo/evidence/task-4-ruff.txt
+?? .omo/evidence/task-4-schema-metadata.txt
+?? .omo/evidence/task-4-schema-red.txt
+?? .omo/evidence/task-4-scope-guard.txt
+?? .omo/evidence/task-4-scratch-container-reset.txt
+?? .omo/evidence/task-4-scratch-container.txt
+?? .omo/evidence/task-4-stale-upgrade.txt
+?? .omo/evidence/task-4-watchdog-scope.txt
+?? backend/alembic/versions/
+?? backend/app/models/
+?? backend/app/repositories/
+?? backend/tests/conftest.py
+?? backend/tests/db/
+?? backend/tests/repositories/
+!! .DS_Store
+!! ".InfoSnack_\355\231\224\353\251\264\354\204\244\352\263\204.md.swp"
+!! .env
+!! .omo/.DS_Store
+!! backend/.env
+!! backend/.pytest_cache/
+!! backend/.ruff_cache/
+!! backend/.venv/
+!! backend/alembic/__pycache__/
+!! backend/alembic/versions/__pycache__/
+!! backend/app/__pycache__/
+!! backend/app/core/__pycache__/
+!! backend/app/models/__pycache__/
+!! backend/app/repositories/__pycache__/
+!! backend/tests/__pycache__/
+!! backend/tests/db/__pycache__/
+!! backend/tests/repositories/__pycache__/
+!! docker/.DS_Store
+!! docker/postgres/.DS_Store
+!! docs/.DS_Store
+!! docs/backup/.DS_Store
+!! docs/ref/.DS_Store
+!! docs/ref/infosnack_design/.DS_Store
+!! docs/ref/infosnack_design/project/.DS_Store
+!! frontend/.env.local
+!! frontend/.next/
+!! frontend/coverage/
+!! frontend/node_modules/
+!! frontend/tsconfig.tsbuildinfo
+!! output/

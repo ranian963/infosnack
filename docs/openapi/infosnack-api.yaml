@@ -1,0 +1,5521 @@
+openapi: 3.1.0
+info:
+  title: InfoSnack API
+  version: 3.0.0
+  summary: InfoSnack v3 backend and BFF API contract
+  description: >
+    OpenAPI 3.1 contract for InfoSnack v3. Every dynamic UI read, user action,
+    browser extension action, automatic collection action, worker/admin action,
+    export, share, notification, and outgoing webhook payload must be represented
+    by this contract. Next.js may act as a BFF, but it must call or expose the
+    same schema semantics defined here. Authentication is owned by FastAPI using
+    HttpOnly cookies, CSRF double-submit, and scoped bearer tokens for extension
+    or API clients.
+servers:
+  - url: /
+    description: Same-origin backend API root. Paths include the /api prefix.
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+tags:
+  - name: System
+  - name: Auth
+  - name: Invitations
+  - name: Workspaces
+  - name: Users
+  - name: Dashboard
+  - name: Captures
+  - name: Contents
+  - name: Collections
+  - name: Tags
+  - name: Credentials
+  - name: Sources
+  - name: Search
+  - name: Chat
+  - name: Digests
+  - name: Shares
+  - name: Exports
+  - name: Notifications
+  - name: Webhooks
+  - name: Extension
+  - name: Admin
+
+paths:
+  /api/health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      summary: Check API and dependency health.
+      security: []
+      x-required-role: public
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      responses:
+        "200":
+          description: Service health.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Log in with email and password.
+      security: []
+      x-required-role: public
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authenticated session. Sets access, refresh, and CSRF cookies.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SetCookie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Revoke the current refresh token and clear auth cookies.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: authenticated
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      responses:
+        "204":
+          description: Session revoked and cookies cleared.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SetCookie"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshSession
+      summary: Rotate refresh token and issue a new access token.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+      x-required-role: authenticated
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      responses:
+        "200":
+          description: Refreshed session cookies and user context.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SetCookie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Refresh replay detected. Token family has been revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentSession
+      summary: Get current user and workspace memberships.
+      x-required-role: authenticated
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      responses:
+        "200":
+          description: Current authenticated principal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: registerWithInvitation
+      summary: Register using an invitation token.
+      security: []
+      x-required-role: public
+      x-workspace-scope: invitation_token
+      x-enumeration-policy: invalid_token_returns_404
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created and session cookies issued.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SetCookie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/invitations:
+    post:
+      tags: [Invitations]
+      operationId: createInvitation
+      summary: Create a workspace invitation.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationCreateRequest"
+      responses:
+        "201":
+          description: Invitation created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/invitations/{invitation_token}:
+    get:
+      tags: [Invitations]
+      operationId: getInvitationStatus
+      summary: Get public invitation status before registration.
+      security: []
+      x-required-role: public
+      x-workspace-scope: invitation_token
+      x-enumeration-policy: invalid_token_returns_404
+      parameters:
+        - $ref: "#/components/parameters/InvitationToken"
+      responses:
+        "200":
+          description: Invitation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationStatus"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/invitations/{invitation_id}/revoke:
+    post:
+      tags: [Invitations]
+      operationId: revokeInvitation
+      summary: Revoke an unused invitation.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/InvitationId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Revoked invitation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/dashboard:
+    get:
+      tags: [Dashboard]
+      operationId: getDashboard
+      summary: Get dashboard aggregates and health summaries.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Dashboard aggregate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/workspaces:
+    get:
+      tags: [Workspaces]
+      operationId: listWorkspaces
+      summary: List workspaces visible to the current user.
+      x-required-role: authenticated
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      responses:
+        "200":
+          description: Workspace memberships.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/workspaces/{workspace_id}:
+    get:
+      tags: [Workspaces]
+      operationId: getWorkspace
+      summary: Get workspace settings.
+      x-required-role: viewer
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+      responses:
+        "200":
+          description: Workspace detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Workspaces]
+      operationId: updateWorkspace
+      summary: Update workspace settings.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceUpdateRequest"
+      responses:
+        "200":
+          description: Updated workspace.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Workspaces]
+      operationId: deleteWorkspace
+      summary: Soft-delete a workspace.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: owner
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+      responses:
+        "204":
+          description: Workspace soft-deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/workspaces/{workspace_id}/purge:
+    post:
+      tags: [Workspaces]
+      operationId: purgeWorkspace
+      summary: Permanently purge a previously deleted workspace and its owned resources.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: owner
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Workspace purge job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/workspaces/{workspace_id}/members:
+    get:
+      tags: [Workspaces]
+      operationId: listWorkspaceMembers
+      summary: List workspace members.
+      x-required-role: admin
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+      responses:
+        "200":
+          description: Workspace members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceMemberListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/workspaces/{workspace_id}/members/{user_id}:
+    patch:
+      tags: [Workspaces]
+      operationId: updateWorkspaceMember
+      summary: Update a workspace member role.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceMemberUpdateRequest"
+      responses:
+        "200":
+          description: Updated membership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceMembership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Workspaces]
+      operationId: removeWorkspaceMember
+      summary: Remove a member from a workspace.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: path
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "204":
+          description: Member removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/users/me/profile:
+    patch:
+      tags: [Users]
+      operationId: updateCurrentUserProfile
+      summary: Update the current user profile.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: authenticated
+      x-workspace-scope: none
+      x-enumeration-policy: not_applicable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdateRequest"
+      responses:
+        "200":
+          description: Updated user profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/credentials:
+    get:
+      tags: [Credentials]
+      operationId: listCredentials
+      summary: List workspace credentials with secret values redacted.
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Redacted credentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Credentials]
+      operationId: createCredential
+      summary: Create an encrypted workspace credential.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialCreateRequest"
+      responses:
+        "201":
+          description: Created redacted credential metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/credentials/{credential_id}:
+    patch:
+      tags: [Credentials]
+      operationId: updateCredential
+      summary: Update credential metadata or replace encrypted secret fields.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialUpdateRequest"
+      responses:
+        "200":
+          description: Updated redacted credential metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Credentials]
+      operationId: deleteCredential
+      summary: Delete a workspace credential and mark dependent sources as needing credentials.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "204":
+          description: Credential deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/credentials/{credential_id}/test:
+    post:
+      tags: [Credentials]
+      operationId: testCredential
+      summary: Test a credential without returning secret values.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Credential test result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialTestResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/system-credentials:
+    get:
+      tags: [Credentials]
+      operationId: listSystemCredentials
+      summary: List system credential metadata.
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      responses:
+        "200":
+          description: Redacted system credentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Credentials]
+      operationId: createSystemCredential
+      summary: Create a system credential.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialCreateRequest"
+      responses:
+        "201":
+          description: Created redacted system credential metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/system-credentials/{credential_id}:
+    patch:
+      tags: [Credentials]
+      operationId: updateSystemCredential
+      summary: Update system credential metadata or rotate secret fields.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialUpdateRequest"
+      responses:
+        "200":
+          description: Updated redacted system credential metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Credentials]
+      operationId: deleteSystemCredential
+      summary: Delete a system credential.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/CredentialId"
+      responses:
+        "204":
+          description: System credential deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/captures/url:
+    post:
+      tags: [Captures]
+      operationId: createUrlCapture
+      summary: Capture a URL and enqueue background processing.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UrlCaptureRequest"
+      responses:
+        "202":
+          description: Capture accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/captures/text:
+    post:
+      tags: [Captures]
+      operationId: createTextCapture
+      summary: Capture direct text, note content, or browser selection text.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextCaptureRequest"
+      responses:
+        "202":
+          description: Capture accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/captures/files:
+    post:
+      tags: [Captures]
+      operationId: createFileCapture
+      summary: Create signed upload targets for PDF/image capture.
+      description: >
+        This is step 1 of the two-step signed upload flow. The client uploads each
+        file to the returned signed URL, then calls completeFileCapture to verify
+        uploaded assets and enqueue processing.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileCaptureRequest"
+      responses:
+        "202":
+          description: File capture accepted with signed upload targets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileCaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/captures/{capture_id}/complete:
+    post:
+      tags: [Captures]
+      operationId: completeFileCapture
+      summary: Complete signed file upload and enqueue processing.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CaptureId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileCaptureCompleteRequest"
+      responses:
+        "202":
+          description: Uploads verified and processing job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/captures/{capture_id}:
+    get:
+      tags: [Captures]
+      operationId: getCapture
+      summary: Get capture processing status.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CaptureId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Capture status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capture"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/captures/{capture_id}/retry:
+    post:
+      tags: [Captures]
+      operationId: retryCapture
+      summary: Retry a failed capture processing job.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CaptureId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Retry job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/contents:
+    get:
+      tags: [Contents]
+      operationId: listContents
+      summary: List library contents with filters and cursor pagination.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/SourceIdQuery"
+        - $ref: "#/components/parameters/SourceTypeQuery"
+        - $ref: "#/components/parameters/ContentStatusQuery"
+        - $ref: "#/components/parameters/ContentTypeQuery"
+        - $ref: "#/components/parameters/TagQuery"
+        - $ref: "#/components/parameters/CollectionIdQuery"
+        - $ref: "#/components/parameters/FromDate"
+        - $ref: "#/components/parameters/ToDate"
+        - $ref: "#/components/parameters/ReadStatusQuery"
+        - $ref: "#/components/parameters/ContentSortQuery"
+      responses:
+        "200":
+          description: Cursor-paginated content list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/contents/{content_id}:
+    get:
+      tags: [Contents]
+      operationId: getContent
+      summary: Get content detail for the reader page.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Content detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Contents]
+      operationId: updateContent
+      summary: Update content title, summary, tags, metadata, or read/archive/favorite flags.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContentUpdateRequest"
+      responses:
+        "200":
+          description: Updated content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Contents]
+      operationId: deleteContent
+      summary: Soft-delete a content item.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "204":
+          description: Content soft-deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/contents/{content_id}/activity:
+    get:
+      tags: [Contents]
+      operationId: listContentActivity
+      summary: List capture, reprocess, share, export, and audit-safe activity for a content item.
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated content activity events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentActivityPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/contents/{content_id}/reprocess:
+    post:
+      tags: [Contents]
+      operationId: reprocessContent
+      summary: Re-run AI enrichment, chunking, embedding, or indexing.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReprocessRequest"
+      responses:
+        "202":
+          description: Reprocess job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/contents/{content_id}/purge:
+    post:
+      tags: [Contents]
+      operationId: purgeContent
+      summary: Permanently purge a content item and its assets after soft delete.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ContentId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Content purge job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/contents/bulk-action:
+    post:
+      tags: [Contents]
+      operationId: bulkUpdateContents
+      summary: Apply archive, tag, collection, delete, read, or export actions to multiple contents.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkContentActionRequest"
+      responses:
+        "202":
+          description: Bulk action accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkActionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/collections:
+    get:
+      tags: [Collections]
+      operationId: listCollections
+      summary: List workspace collections.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Collections.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Collections]
+      operationId: createCollection
+      summary: Create a collection.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionCreateRequest"
+      responses:
+        "201":
+          description: Created collection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/collections/{collection_id}:
+    patch:
+      tags: [Collections]
+      operationId: updateCollection
+      summary: Update a collection name or description.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CollectionId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionUpdateRequest"
+      responses:
+        "200":
+          description: Updated collection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Collections]
+      operationId: deleteCollection
+      summary: Soft-delete a collection without deleting its contents.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/CollectionId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "204":
+          description: Collection soft-deleted and collection item links removed.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/tags:
+    get:
+      tags: [Tags]
+      operationId: listTags
+      summary: List workspace tags and usage counts.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Tags.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/sources:
+    get:
+      tags: [Sources]
+      operationId: listSources
+      summary: List automatic collection sources.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated sources.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourcePage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Sources]
+      operationId: createSource
+      summary: Create an automatic collection source.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceCreateRequest"
+      responses:
+        "201":
+          description: Source created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/sources/inspect:
+    post:
+      tags: [Sources]
+      operationId: inspectSource
+      summary: Detect source type and preview sample items before creating a source.
+      description: >
+        This pre-create wizard endpoint does not persist a source. It normalizes a
+        pasted URL or query, detects the standard source_type, suggests default
+        config, and returns 1-3 redacted sample items when accessible.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceInspectRequest"
+      responses:
+        "200":
+          description: Detected source type, default config, and preview samples.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceInspectResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/sources/{source_id}:
+    get:
+      tags: [Sources]
+      operationId: getSource
+      summary: Get source detail and health.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Source detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Sources]
+      operationId: updateSource
+      summary: Update an automatic collection source.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceUpdateRequest"
+      responses:
+        "200":
+          description: Updated source.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Sources]
+      operationId: deleteSource
+      summary: Delete an automatic collection source.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "204":
+          description: Source deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/sources/{source_id}/test:
+    post:
+      tags: [Sources]
+      operationId: testSource
+      summary: Test source configuration and return redacted diagnostics.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Source test result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceTestResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/sources/{source_id}/run:
+    post:
+      tags: [Sources]
+      operationId: runSource
+      summary: Manually enqueue a source run.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Source run accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/sources/{source_id}/runs:
+    get:
+      tags: [Sources]
+      operationId: listSourceRuns
+      summary: List source run history.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated source runs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceRunPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/sources/{source_id}/pause:
+    post:
+      tags: [Sources]
+      operationId: pauseSource
+      summary: Pause an automatic collection source.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Paused source.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/sources/{source_id}/resume:
+    post:
+      tags: [Sources]
+      operationId: resumeSource
+      summary: Resume an automatic collection source.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/SourceId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Resumed source.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/search:
+    get:
+      tags: [Search]
+      operationId: searchContents
+      summary: Hybrid lexical and vector search.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/SearchQueryRequired"
+        - $ref: "#/components/parameters/SourceIdQuery"
+        - $ref: "#/components/parameters/SourceTypeQuery"
+        - $ref: "#/components/parameters/ContentTypeQuery"
+        - $ref: "#/components/parameters/TagQuery"
+        - $ref: "#/components/parameters/CollectionIdQuery"
+        - $ref: "#/components/parameters/FromDate"
+        - $ref: "#/components/parameters/ToDate"
+        - name: mode
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SearchMode"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/SearchSortQuery"
+      responses:
+        "200":
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/search/semantic:
+    post:
+      tags: [Search]
+      operationId: semanticSearch
+      summary: Semantic search for long query bodies.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SemanticSearchRequest"
+      responses:
+        "200":
+          description: Semantic search results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/search/suggestions:
+    get:
+      tags: [Search]
+      operationId: getSearchSuggestions
+      summary: Get tag, source, and query suggestions.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/SearchQuery"
+      responses:
+        "200":
+          description: Search suggestions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSuggestionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/search/reindex:
+    post:
+      tags: [Search]
+      operationId: createSearchReindexJob
+      summary: Enqueue an admin-only reindex job.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReindexRequest"
+      responses:
+        "202":
+          description: Reindex job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/chat/ask:
+    post:
+      tags: [Chat]
+      operationId: askChat
+      summary: Ask current-content, library, collection, or compare-mode RAG.
+      description: >
+        Returns JSON when stream=false. Returns text/event-stream when stream=true.
+        SSE events are persisted in message_events with run_id and sequence. Clients
+        resume using Last-Event-ID or last_event_id.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/LastEventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatAskRequest"
+      responses:
+        "200":
+          description: Chat answer or streaming events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatAskResponse"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/ChatSseEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/chat/threads:
+    get:
+      tags: [Chat]
+      operationId: listChatThreads
+      summary: List persisted chat threads for the selected workspace.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated chat threads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThreadPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Chat]
+      operationId: createChatThread
+      summary: Create a persisted chat thread.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatThreadCreateRequest"
+      responses:
+        "201":
+          description: Chat thread created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThread"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/chat/threads/{chat_thread_id}:
+    get:
+      tags: [Chat]
+      operationId: getChatThread
+      summary: Get a persisted chat thread.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ChatThreadId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Chat thread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatThread"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/chat/threads/{chat_thread_id}/messages:
+    get:
+      tags: [Chat]
+      operationId: listChatMessages
+      summary: List persisted messages for a chat thread.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ChatThreadId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated chat messages.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessagePage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/digests:
+    get:
+      tags: [Digests]
+      operationId: listDigests
+      summary: List digest settings and generated digest runs.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated digests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Digests]
+      operationId: createDigest
+      summary: Create a digest configuration or manual digest generation.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigestCreateRequest"
+      responses:
+        "201":
+          description: Digest created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Digest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/digests/{digest_id}:
+    get:
+      tags: [Digests]
+      operationId: getDigest
+      summary: Get digest preview or published detail.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/DigestId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Digest detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Digests]
+      operationId: updateDigest
+      summary: Update digest curation, schedule, or status.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/DigestId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigestUpdateRequest"
+      responses:
+        "200":
+          description: Updated digest detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/digests/{digest_id}/preview:
+    post:
+      tags: [Digests]
+      operationId: previewDigest
+      summary: Generate or refresh a digest preview.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/DigestId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Preview generation job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/digests/{digest_id}/publish:
+    post:
+      tags: [Digests]
+      operationId: publishDigest
+      summary: Publish a digest and enqueue delivery.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/DigestId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigestPublishRequest"
+      responses:
+        "202":
+          description: Publish job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestPublishResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/shares:
+    get:
+      tags: [Shares]
+      operationId: listShareLinks
+      summary: List share links for the selected workspace.
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated share links.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLinkPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Shares]
+      operationId: createShareLink
+      summary: Create a public share link for content, collection, or digest.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareCreateRequest"
+      responses:
+        "201":
+          description: Share link created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLink"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/shares/{share_id}/revoke:
+    post:
+      tags: [Shares]
+      operationId: revokeShareLink
+      summary: Revoke a share link immediately.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ShareId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Revoked share link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLink"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/public/shares/{share_token}:
+    get:
+      tags: [Shares]
+      operationId: getPublicShare
+      summary: Get public share content using an opaque token.
+      security: []
+      x-required-role: public
+      x-workspace-scope: share_token
+      x-enumeration-policy: revoked_or_expired_token_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ShareToken"
+      responses:
+        "200":
+          description: Public share payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicShareResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/exports:
+    get:
+      tags: [Exports]
+      operationId: listExportJobs
+      summary: List Markdown zip export jobs for the selected workspace.
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated export jobs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Exports]
+      operationId: createExportJob
+      summary: Create a Markdown zip export job.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportCreateRequest"
+      responses:
+        "202":
+          description: Export job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJob"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/exports/{export_job_id}:
+    get:
+      tags: [Exports]
+      operationId: getExportJob
+      summary: Get export job status and signed download URL when ready.
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/ExportJobId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Export job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJob"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: listWebhooks
+      summary: List outgoing webhook subscriptions for the selected workspace.
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated webhook subscriptions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Webhooks]
+      operationId: createWebhook
+      summary: Create an outgoing webhook subscription.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookCreateRequest"
+      responses:
+        "201":
+          description: Webhook subscription created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookCreateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/webhooks/{webhook_id}:
+    patch:
+      tags: [Webhooks]
+      operationId: updateWebhook
+      summary: Update an outgoing webhook subscription.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookUpdateRequest"
+      responses:
+        "200":
+          description: Webhook subscription updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookUpdateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Webhooks]
+      operationId: deleteWebhook
+      summary: Delete an outgoing webhook subscription.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "204":
+          description: Webhook subscription deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/webhooks/{webhook_id}/test:
+    post:
+      tags: [Webhooks]
+      operationId: testWebhook
+      summary: Send a signed test event to a webhook endpoint.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Webhook test delivery accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookTestResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/webhooks/{webhook_id}/deliveries:
+    get:
+      tags: [Webhooks]
+      operationId: listWebhookDeliveries
+      summary: List redacted delivery attempts for a webhook subscription.
+      x-required-role: admin
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated webhook deliveries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookDeliveryPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: List in-app notifications.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated notifications.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/notifications/{notification_id}/read:
+    post:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      summary: Mark an in-app notification as read.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Updated notification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/settings/notifications:
+    get:
+      tags: [Notifications]
+      operationId: getNotificationSettings
+      summary: Get email and in-app notification preferences.
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "200":
+          description: Notification preferences.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    patch:
+      tags: [Notifications]
+      operationId: updateNotificationSettings
+      summary: Update email and in-app notification preferences.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: viewer
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettingsUpdateRequest"
+      responses:
+        "200":
+          description: Updated notification preferences.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/extension/auth/codes:
+    post:
+      tags: [Extension]
+      operationId: createExtensionAuthCode
+      summary: Create a short-lived one-time extension connection code.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: foreign_workspace_returns_404
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeader"
+      responses:
+        "201":
+          description: One-time extension auth code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionAuthCode"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/extension/auth/exchange:
+    post:
+      tags: [Extension]
+      operationId: exchangeExtensionAuthCode
+      summary: Exchange a one-time code for a scoped extension bearer token.
+      security: []
+      x-required-role: public
+      x-workspace-scope: extension_code
+      x-enumeration-policy: invalid_code_returns_404
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionAuthExchangeRequest"
+      responses:
+        "200":
+          description: Scoped extension token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionTokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/extension/auth/revoke:
+    post:
+      tags: [Extension]
+      operationId: revokeExtensionToken
+      summary: Revoke the current extension bearer token.
+      security:
+        - bearerAuth: []
+      x-required-role: member
+      x-workspace-scope: selected
+      x-enumeration-policy: not_applicable
+      responses:
+        "204":
+          description: Extension token revoked.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      operationId: listAdminUsers
+      summary: Search instance user metadata for super admin support.
+      description: >
+        Read-only super_admin endpoint. Returns account metadata needed for
+        support and operations. It never returns user content, raw extraction,
+        credentials, auth tokens, or impersonation capability.
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/SearchQuery"
+      responses:
+        "200":
+          description: Cursor-paginated instance user metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/overview:
+    get:
+      tags: [Admin]
+      operationId: getAdminOverview
+      summary: Get instance or workspace admin overview metrics.
+      x-required-role: admin
+      x-workspace-scope: selected_or_instance
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeaderOptional"
+      responses:
+        "200":
+          description: Admin overview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/jobs:
+    get:
+      tags: [Admin]
+      operationId: listAdminJobs
+      summary: List job runs, failed jobs, and stale jobs.
+      x-required-role: admin
+      x-workspace-scope: selected_or_instance
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeaderOptional"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/JobStatus"
+      responses:
+        "200":
+          description: Cursor-paginated job runs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRunPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/jobs/{job_run_id}/retry:
+    post:
+      tags: [Admin]
+      operationId: retryAdminJob
+      summary: Retry a failed job run from the admin dashboard.
+      security:
+        - cookieAuth: []
+          csrfHeader: []
+        - bearerAuth: []
+      x-required-role: admin
+      x-workspace-scope: selected_or_instance
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/JobRunId"
+        - $ref: "#/components/parameters/WorkspaceIdHeaderOptional"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Retry job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/admin/sources:
+    get:
+      tags: [Admin]
+      operationId: listAdminSources
+      summary: List failing or paused sources across visible scope.
+      x-required-role: admin
+      x-workspace-scope: selected_or_instance
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeaderOptional"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated admin source list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourcePage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/audit:
+    get:
+      tags: [Admin]
+      operationId: listAuditEvents
+      summary: List security and admin audit events.
+      x-required-role: admin
+      x-workspace-scope: selected_or_instance
+      x-enumeration-policy: same_workspace_role_shortage_returns_403
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceIdHeaderOptional"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated audit events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/models:
+    get:
+      tags: [Admin]
+      operationId: getModelAdminState
+      summary: Get model provider health, token usage, and cost estimates.
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      responses:
+        "200":
+          description: Model admin state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelAdminState"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/admin/storage:
+    get:
+      tags: [Admin]
+      operationId: getStorageAdminState
+      summary: Get object storage usage and purge job state.
+      x-required-role: super_admin
+      x-workspace-scope: instance
+      x-enumeration-policy: same_instance_role_shortage_returns_403
+      responses:
+        "200":
+          description: Storage admin state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageAdminState"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+webhooks:
+  digestPublished:
+    post:
+      tags: [Digests]
+      operationId: webhookDigestPublished
+      summary: Custom outgoing webhook event sent when a digest is published.
+      parameters:
+        - $ref: "#/components/parameters/WebhookEventIdHeader"
+        - $ref: "#/components/parameters/WebhookTimestampHeader"
+        - $ref: "#/components/parameters/WebhookSignatureHeader"
+        - $ref: "#/components/parameters/WebhookRetryCountHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigestPublishedEvent"
+      responses:
+        "200":
+          description: Receiver accepted the webhook.
+  sourceFailed:
+    post:
+      tags: [Sources]
+      operationId: webhookSourceFailed
+      summary: Custom outgoing webhook event sent when a source fails, needs credentials, or is paused.
+      parameters:
+        - $ref: "#/components/parameters/WebhookEventIdHeader"
+        - $ref: "#/components/parameters/WebhookTimestampHeader"
+        - $ref: "#/components/parameters/WebhookSignatureHeader"
+        - $ref: "#/components/parameters/WebhookRetryCountHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceFailedEvent"
+      responses:
+        "200":
+          description: Receiver accepted the webhook.
+  pipelineFailed:
+    post:
+      tags: [Admin]
+      operationId: webhookPipelineFailed
+      summary: Custom outgoing webhook event sent when content processing fails.
+      parameters:
+        - $ref: "#/components/parameters/WebhookEventIdHeader"
+        - $ref: "#/components/parameters/WebhookTimestampHeader"
+        - $ref: "#/components/parameters/WebhookSignatureHeader"
+        - $ref: "#/components/parameters/WebhookRetryCountHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PipelineFailedEvent"
+      responses:
+        "200":
+          description: Receiver accepted the webhook.
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: infosnack_at
+      description: FastAPI-owned HttpOnly access JWT cookie for web frontend sessions.
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: Double-submit CSRF token matching the non-HttpOnly infosnack_csrf cookie.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: FastAPI-issued scoped token for browser extension and API clients.
+
+  headers:
+    SetCookie:
+      description: >
+        Sets or clears infosnack_at, infosnack_rt, and/or infosnack_csrf cookies.
+        Production cookies are Secure and SameSite=Lax. access and refresh cookies
+        are HttpOnly; CSRF cookie is readable by the frontend.
+      schema:
+        type: string
+    RetryAfter:
+      description: Seconds until the client should retry.
+      schema:
+        type: integer
+        minimum: 0
+
+  parameters:
+    WorkspaceIdHeader:
+      name: X-Workspace-Id
+      in: header
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    WorkspaceIdHeaderOptional:
+      name: X-Workspace-Id
+      in: header
+      required: false
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 200
+    LastEventId:
+      name: Last-Event-ID
+      in: header
+      required: false
+      schema:
+        type: string
+        description: SSE resume cursor formatted as run_id:sequence.
+    WebhookEventIdHeader:
+      name: X-InfoSnack-Event-Id
+      in: header
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    WebhookTimestampHeader:
+      name: X-InfoSnack-Timestamp
+      in: header
+      required: true
+      schema:
+        type: string
+        format: date-time
+    WebhookSignatureHeader:
+      name: X-InfoSnack-Signature
+      in: header
+      required: true
+      schema:
+        type: string
+        description: HMAC-SHA256 signature over timestamp and request body for custom webhook targets.
+    WebhookRetryCountHeader:
+      name: X-InfoSnack-Retry-Count
+      in: header
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+        description: Zero for the first delivery attempt, incremented for retries.
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: [string, "null"]
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+    SearchQuery:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 500
+    SearchQueryRequired:
+      name: q
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 500
+    SourceIdQuery:
+      name: source_id
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    SourceTypeQuery:
+      name: source_type
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/SourceType"
+    ContentSortQuery:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [latest, relevance, unread_first, favorite_first]
+        default: latest
+    SearchSortQuery:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [relevance, latest, unread_first, favorite_first]
+        default: relevance
+    FromDate:
+      name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    ToDate:
+      name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    ContentStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/ContentStatus"
+    ContentTypeQuery:
+      name: content_type
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/ContentType"
+    TagQuery:
+      name: tag
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 80
+    CollectionIdQuery:
+      name: collection_id
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    ReadStatusQuery:
+      name: read_status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [unread, read, archived]
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    InvitationToken:
+      name: invitation_token
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 24
+    InvitationId:
+      name: invitation_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    CredentialId:
+      name: credential_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    CaptureId:
+      name: capture_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    ContentId:
+      name: content_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    CollectionId:
+      name: collection_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    SourceId:
+      name: source_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    WebhookId:
+      name: webhook_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    DigestId:
+      name: digest_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    ChatThreadId:
+      name: chat_thread_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    ShareId:
+      name: share_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    ShareToken:
+      name: share_token
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 24
+    ExportJobId:
+      name: export_job_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    NotificationId:
+      name: notification_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    JobRunId:
+      name: job_run_id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+
+  responses:
+    BadRequest:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient permission in the same workspace or instance scope.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found or foreign workspace resource hidden by enumeration policy.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Duplicate, replay, stale state, or conflicting resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Rate limited.
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    DateTime:
+      type: string
+      format: date-time
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorBody"
+    ErrorBody:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          examples: [validation_error, unauthorized, forbidden, not_found, conflict, csrf_failed]
+        message:
+          type: string
+          description: Backend message key or safe user-facing summary.
+        details:
+          type: object
+          additionalProperties: true
+        request_id:
+          type: string
+    HealthResponse:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ok, degraded, down]
+    Role:
+      type: string
+      enum: [super_admin, owner, admin, member, viewer]
+    User:
+      type: object
+      required: [id, email, name, locale, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+          format: uri
+        locale:
+          type: string
+          enum: [ko, en]
+          default: ko
+        is_super_admin:
+          type: boolean
+          default: false
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        avatar_url:
+          type: [string, "null"]
+          format: uri
+        locale:
+          type: string
+          enum: [ko, en]
+    Workspace:
+      type: object
+      required: [id, name, workspace_type, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+        workspace_type:
+          type: string
+          enum: [personal, team]
+        default_language:
+          type: string
+          enum: [ko, en]
+          default: ko
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    WorkspaceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        default_language:
+          type: string
+          enum: [ko, en]
+    WorkspaceMembership:
+      type: object
+      required: [workspace, user, role]
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Workspace"
+        user:
+          $ref: "#/components/schemas/User"
+        role:
+          $ref: "#/components/schemas/Role"
+    WorkspaceMemberUpdateRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [owner, admin, member, viewer]
+    WorkspaceListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMembership"
+    WorkspaceMemberListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMembership"
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 12
+    RegisterRequest:
+      type: object
+      required: [invitation_token, name, password]
+      properties:
+        invitation_token:
+          type: string
+        name:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          format: password
+          minLength: 12
+        locale:
+          type: string
+          enum: [ko, en]
+          default: ko
+    AuthSessionResponse:
+      type: object
+      required: [user, memberships, csrf_token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMembership"
+        csrf_token:
+          type: string
+          description: Same value as infosnack_csrf cookie for frontend header use.
+    AuthMeResponse:
+      allOf:
+        - $ref: "#/components/schemas/AuthSessionResponse"
+    InvitationCreateRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member, viewer]
+        expires_in_days:
+          type: integer
+          minimum: 1
+          maximum: 30
+          default: 7
+    Invitation:
+      type: object
+      required: [id, email, role, status, expires_at, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member, viewer]
+        status:
+          type: string
+          enum: [pending, used, expired, revoked]
+        invitation_url:
+          type: [string, "null"]
+          format: uri
+        expires_at:
+          $ref: "#/components/schemas/DateTime"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    InvitationStatus:
+      type: object
+      required: [email, workspace_name, role, status, expires_at]
+      properties:
+        email:
+          type: string
+          format: email
+        workspace_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, member, viewer]
+        status:
+          type: string
+          enum: [pending, used, expired, revoked]
+        expires_at:
+          $ref: "#/components/schemas/DateTime"
+    Credential:
+      type: object
+      required: [id, name, provider, field_keys, scope, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+        provider:
+          type: string
+          enum: [github, huggingface, openrouter, upstage, custom]
+        scope:
+          type: string
+          enum: [workspace, system]
+        field_keys:
+          type: array
+          description: Secret field names only. Secret values are never returned.
+          items:
+            type: string
+        key_id:
+          type: string
+        rotation_status:
+          type: string
+          enum: [active, rotation_due, rotating]
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        updated_at:
+          $ref: "#/components/schemas/DateTime"
+    CredentialListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Credential"
+    CredentialCreateRequest:
+      type: object
+      required: [name, provider, secret_fields]
+      properties:
+        name:
+          type: string
+        provider:
+          type: string
+          enum: [github, huggingface, openrouter, upstage, custom]
+        secret_fields:
+          type: object
+          additionalProperties:
+            type: string
+            format: password
+    CredentialUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        secret_fields:
+          type: object
+          additionalProperties:
+            type: string
+            format: password
+    CredentialTestResult:
+      type: object
+      required: [status, redacted_message]
+      properties:
+        status:
+          type: string
+          enum: [ok, failed]
+        redacted_message:
+          type: string
+        provider_status_code:
+          type: [integer, "null"]
+    CaptureStatus:
+      type: string
+      enum: [queued, fetching, extracting, normalizing, deduplicating, ai_processing, indexing, ready, needs_review, failed]
+    CaptureFailureCode:
+      type: string
+      enum:
+        - extraction_low_quality
+        - fetch_failed
+        - parser_failed
+        - policy_blocked
+        - ssrf_blocked
+        - youtube_transcript_unavailable
+        - youtube_metadata_unavailable
+        - youtube_policy_blocked
+        - unknown
+    CaptureInputType:
+      type: string
+      enum: [url, text, file]
+    UrlCaptureRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Web page URL or YouTube video URL.
+        title:
+          type: [string, "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        memo:
+          type: [string, "null"]
+        save_as_new:
+          type: boolean
+          default: false
+        source_client:
+          type: string
+          enum: [web_app, browser_extension, api_client]
+          default: web_app
+        input_hint:
+          type: string
+          enum: [auto, web_page, youtube_video]
+          default: auto
+    TextCaptureRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+        source_url:
+          type: [string, "null"]
+          format: uri
+        title:
+          type: [string, "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        memo:
+          type: [string, "null"]
+        source_client:
+          type: string
+          enum: [web_app, browser_extension, api_client]
+          default: web_app
+    FileCaptureRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 1
+          description: Initial release accepts exactly one PDF or image per capture request.
+          items:
+            $ref: "#/components/schemas/FileUploadIntent"
+        title:
+          type: [string, "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        memo:
+          type: [string, "null"]
+    FileUploadIntent:
+      type: object
+      required: [filename, content_type, size_bytes]
+      properties:
+        filename:
+          type: string
+        content_type:
+          type: string
+          enum: [application/pdf, image/png, image/jpeg, image/webp]
+        size_bytes:
+          type: integer
+          minimum: 1
+    SignedUpload:
+      type: object
+      required: [asset_id, upload_url, method, headers]
+      properties:
+        asset_id:
+          $ref: "#/components/schemas/Uuid"
+        upload_url:
+          type: string
+          format: uri
+        method:
+          type: string
+          enum: [PUT]
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+    FileUploadCompletion:
+      type: object
+      required: [asset_id]
+      properties:
+        asset_id:
+          $ref: "#/components/schemas/Uuid"
+        size_bytes:
+          type: [integer, "null"]
+          minimum: 1
+        sha256:
+          type: [string, "null"]
+          pattern: "^[a-f0-9]{64}$"
+    FileCaptureCompleteRequest:
+      type: object
+      required: [uploaded_assets]
+      properties:
+        uploaded_assets:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            $ref: "#/components/schemas/FileUploadCompletion"
+    Capture:
+      type: object
+      required: [id, input_type, status, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        input_type:
+          $ref: "#/components/schemas/CaptureInputType"
+        status:
+          $ref: "#/components/schemas/CaptureStatus"
+        failure_code:
+          anyOf:
+            - $ref: "#/components/schemas/CaptureFailureCode"
+            - type: "null"
+        failure_message:
+          type: [string, "null"]
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        updated_at:
+          $ref: "#/components/schemas/DateTime"
+    CaptureResponse:
+      type: object
+      required: [capture]
+      properties:
+        capture:
+          $ref: "#/components/schemas/Capture"
+        duplicate_of_content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+    FileCaptureResponse:
+      allOf:
+        - $ref: "#/components/schemas/CaptureResponse"
+        - type: object
+          required: [signed_uploads]
+          properties:
+            signed_uploads:
+              type: array
+              maxItems: 1
+              items:
+                $ref: "#/components/schemas/SignedUpload"
+    ContentStatus:
+      type: string
+      enum: [queued, fetching, extracting, normalizing, deduplicating, ai_processing, indexing, ready, needs_review, failed, archived, deleted]
+    ContentType:
+      type: string
+      enum: [article, paper, video, note, image, document, other]
+    ContentSummary:
+      type: object
+      required: [id, title, status, content_type, saved_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        title:
+          type: string
+        source_url:
+          type: [string, "null"]
+          format: uri
+        domain:
+          type: [string, "null"]
+        thumbnail_url:
+          type: [string, "null"]
+          format: uri
+          description: Representative thumbnail, OG image, YouTube thumbnail, or generated asset URL for list/card rendering.
+        source_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+          description: Collection source id when the content was created by an automatic source run.
+        source_name:
+          type: [string, "null"]
+          description: Display name of the collection source for list/card rendering.
+        status:
+          $ref: "#/components/schemas/ContentStatus"
+        content_type:
+          $ref: "#/components/schemas/ContentType"
+        one_line_summary:
+          type: [string, "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        read_status:
+          type: string
+          enum: [unread, read, archived]
+        favorite:
+          type: boolean
+        saved_at:
+          $ref: "#/components/schemas/DateTime"
+    ContentDetail:
+      allOf:
+        - $ref: "#/components/schemas/ContentSummary"
+        - type: object
+          required: [summary, key_points, metadata, citations, assets]
+          properties:
+            summary:
+              type: [string, "null"]
+            key_points:
+              type: array
+              items:
+                type: string
+            extracted_markdown:
+              type: [string, "null"]
+            metadata:
+              type: object
+              additionalProperties: true
+            entities:
+              type: array
+              items:
+                $ref: "#/components/schemas/Entity"
+            citations:
+              type: array
+              items:
+                $ref: "#/components/schemas/Citation"
+            assets:
+              type: array
+              items:
+                $ref: "#/components/schemas/ContentAsset"
+    ContentAsset:
+      type: object
+      required: [id, asset_type, mime_type, preview_url]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        asset_type:
+          type: string
+          enum: [original, thumbnail, extracted_image, ocr_intermediate]
+        mime_type:
+          type: string
+        preview_url:
+          type: [string, "null"]
+          format: uri
+          description: Signed or proxied URL safe for the current viewer; raw object keys are never returned.
+        size_bytes:
+          type: [integer, "null"]
+          minimum: 0
+        width:
+          type: [integer, "null"]
+          minimum: 1
+        height:
+          type: [integer, "null"]
+          minimum: 1
+        caption:
+          type: [string, "null"]
+          description: AI-generated image caption when available.
+        ocr_text:
+          type: [string, "null"]
+        ocr_blocks:
+          type: array
+          items:
+            type: object
+            required: [text]
+            properties:
+              text:
+                type: string
+              bbox:
+                type: array
+                minItems: 4
+                maxItems: 4
+                items:
+                  type: number
+    Entity:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [person, org, product, place, concept, other]
+    ContentPage:
+      type: object
+      required: [items, next_cursor, has_more, total_count]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentSummary"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+        total_count:
+          type: integer
+          minimum: 0
+          description: Exact number of contents matching the current filters for the selected workspace.
+    ContentActivityActor:
+      type: object
+      required: [actor_type]
+      properties:
+        actor_type:
+          type: string
+          enum: [user, worker, system]
+        user_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        name:
+          type: [string, "null"]
+    ContentActivityEvent:
+      type: object
+      required: [id, event_type, occurred_at, title]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        event_type:
+          type: string
+          enum:
+            - capture_created
+            - capture_status_changed
+            - content_updated
+            - reprocess_requested
+            - reprocess_completed
+            - share_created
+            - share_revoked
+            - export_created
+            - export_completed
+            - content_deleted
+        occurred_at:
+          $ref: "#/components/schemas/DateTime"
+        title:
+          type: string
+        actor:
+          anyOf:
+            - $ref: "#/components/schemas/ContentActivityActor"
+            - type: "null"
+        target_type:
+          type: [string, "null"]
+          enum: [capture, content, job_run, share, export, null]
+        target_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        capture_status:
+          anyOf:
+            - $ref: "#/components/schemas/CaptureStatus"
+            - type: "null"
+        job_status:
+          anyOf:
+            - $ref: "#/components/schemas/JobStatus"
+            - type: "null"
+        redacted_message:
+          type: [string, "null"]
+    ContentActivityPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentActivityEvent"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    ContentUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        read_status:
+          type: string
+          enum: [unread, read, archived]
+        favorite:
+          type: boolean
+    ReprocessRequest:
+      type: object
+      properties:
+        stages:
+          type: array
+          items:
+            type: string
+            enum: [extract, ai_enrich, chunk, embed, index]
+    BulkContentActionRequest:
+      type: object
+      required: [content_ids, action]
+      properties:
+        content_ids:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Uuid"
+        action:
+          type: string
+          enum: [archive, unarchive, delete, favorite, unfavorite, tag_add, collection_add, export]
+        tag_slugs:
+          type: array
+          items:
+            type: string
+        collection_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+    BulkActionResponse:
+      type: object
+      required: [accepted_count]
+      properties:
+        accepted_count:
+          type: integer
+        job:
+          anyOf:
+            - $ref: "#/components/schemas/JobRun"
+            - type: "null"
+    Collection:
+      type: object
+      required: [id, name, item_count]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+        item_count:
+          type: integer
+    CollectionCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+    CollectionUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: [string, "null"]
+    CollectionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Collection"
+    Tag:
+      type: object
+      required: [id, slug, label, usage_count]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        label:
+          type: string
+        usage_count:
+          type: integer
+    TagListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+    SourceType:
+      type: string
+      enum: [rss, sitemap, site, arxiv, github, huggingface]
+    SourceStatus:
+      type: string
+      enum: [enabled, paused, needs_credential, disabled]
+    Source:
+      type: object
+      required: [id, name, source_type, status, schedule, config, failure_count]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+        source_type:
+          $ref: "#/components/schemas/SourceType"
+        status:
+          $ref: "#/components/schemas/SourceStatus"
+        schedule:
+          type: string
+          description: Cron expression or interval string.
+        config:
+          $ref: "#/components/schemas/SourceConfig"
+        credential_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        dedupe_strategy:
+          type: string
+          enum: [url, external_id, content_hash]
+        failure_count:
+          type: integer
+        paused_reason:
+          type: [string, "null"]
+        last_success_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+    SourceConfig:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/SourceType"
+        url:
+          type: [string, "null"]
+          format: uri
+        query:
+          type: [string, "null"]
+        repository:
+          type: [string, "null"]
+          description: owner/repo for GitHub sources.
+        huggingface_target_type:
+          type: [string, "null"]
+          enum: [model, dataset, paper, collection, search, null]
+          description: Hugging Face target type. Model/card search collects model cards, README, paper links, and metadata, not repository source code files.
+        include_rules:
+          type: array
+          items:
+            type: string
+        exclude_rules:
+          type: array
+          items:
+            type: string
+      additionalProperties: true
+    SourceCreateRequest:
+      type: object
+      required: [name, source_type, schedule, config]
+      properties:
+        name:
+          type: string
+        source_type:
+          $ref: "#/components/schemas/SourceType"
+        schedule:
+          type: string
+        config:
+          $ref: "#/components/schemas/SourceConfig"
+        credential_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        dedupe_strategy:
+          type: string
+          enum: [url, external_id, content_hash]
+          default: url
+    SourceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        schedule:
+          type: string
+        config:
+          $ref: "#/components/schemas/SourceConfig"
+        credential_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/SourceStatus"
+    SourcePage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    SourceRun:
+      type: object
+      required: [id, source_id, status, started_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        source_id:
+          $ref: "#/components/schemas/Uuid"
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        items_found:
+          type: integer
+        items_saved:
+          type: integer
+        redacted_error:
+          type: [string, "null"]
+        started_at:
+          $ref: "#/components/schemas/DateTime"
+        finished_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+    SourceRunPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceRun"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    SourceTestResult:
+      type: object
+      required: [status, redacted_message]
+      properties:
+        status:
+          type: string
+          enum: [ok, failed, needs_credential, policy_blocked]
+        redacted_message:
+          type: string
+        sample_items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    SourceInspectRequest:
+      type: object
+      required: [input]
+      properties:
+        input:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Pasted URL, feed URL, arXiv query, GitHub repository URL, or Hugging Face model/card search input.
+        source_type_override:
+          anyOf:
+            - $ref: "#/components/schemas/SourceType"
+            - type: "null"
+        credential_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        config_overrides:
+          type: object
+          additionalProperties: true
+    SourceInspectResponse:
+      type: object
+      required: [status, source_type, display_label, config, sample_items]
+      properties:
+        status:
+          type: string
+          enum: [ok, failed, needs_credential, policy_blocked]
+        source_type:
+          $ref: "#/components/schemas/SourceType"
+        display_label:
+          type: string
+          description: User-facing label such as RSS feed, 일반 웹사이트, or Hugging Face 모델/카드.
+        name_suggestion:
+          type: [string, "null"]
+        schedule_suggestion:
+          type: [string, "null"]
+        config:
+          $ref: "#/components/schemas/SourceConfig"
+        redacted_message:
+          type: [string, "null"]
+        sample_items:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            additionalProperties: true
+    SearchMode:
+      type: string
+      enum: [hybrid, lexical, semantic]
+    SemanticSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+        filters:
+          type: object
+          additionalProperties: true
+        cursor:
+          type: [string, "null"]
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+    SearchResponse:
+      type: object
+      required: [items, next_cursor, has_more, total_count]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+        total_count:
+          type: integer
+          minimum: 0
+          description: Exact number of search results matching the current query and filters.
+    SearchResult:
+      type: object
+      required: [content, score, citations]
+      properties:
+        content:
+          $ref: "#/components/schemas/ContentSummary"
+        score:
+          type: number
+        rank_reason:
+          type: [string, "null"]
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+    SearchSuggestionsResponse:
+      type: object
+      required: [queries, tags, sources]
+      properties:
+        queries:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          items:
+            type: string
+    ReindexRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+    ChatScope:
+      type: string
+      enum: [current_content, library, collection, compare]
+    ChatThread:
+      type: object
+      required: [id, scope, title, created_at, updated_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        scope:
+          $ref: "#/components/schemas/ChatScope"
+        title:
+          type: string
+        content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        collection_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        updated_at:
+          $ref: "#/components/schemas/DateTime"
+    ChatThreadCreateRequest:
+      type: object
+      required: [scope]
+      properties:
+        scope:
+          $ref: "#/components/schemas/ChatScope"
+        title:
+          type: [string, "null"]
+        content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        collection_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+    ChatThreadPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatThread"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    ChatMessage:
+      type: object
+      required: [id, thread_id, role, status, content, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        thread_id:
+          $ref: "#/components/schemas/Uuid"
+        role:
+          type: string
+          enum: [user, assistant, system, tool]
+        status:
+          type: string
+          enum: [running, completed, partial, failed, canceled]
+        content:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        run_id:
+          type: [string, "null"]
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    ChatMessagePage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    ChatAskRequest:
+      type: object
+      required: [question, scope]
+      properties:
+        thread_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+          description: Existing chat thread to append to. If omitted, the backend creates a thread for the request scope.
+        question:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        scope:
+          $ref: "#/components/schemas/ChatScope"
+        content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        collection_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        stream:
+          type: boolean
+          default: true
+        last_event_id:
+          type: [string, "null"]
+    ChatAskResponse:
+      type: object
+      required: [thread_id, run_id, answer, citations, status]
+      properties:
+        thread_id:
+          $ref: "#/components/schemas/Uuid"
+        run_id:
+          type: string
+        answer:
+          type: string
+        status:
+          type: string
+          enum: [completed, failed, partial]
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+    ChatSseEvent:
+      oneOf:
+        - $ref: "#/components/schemas/ChatMetadataEvent"
+        - $ref: "#/components/schemas/ChatDeltaEvent"
+        - $ref: "#/components/schemas/ChatCitationEvent"
+        - $ref: "#/components/schemas/ChatDoneEvent"
+        - $ref: "#/components/schemas/ChatErrorEvent"
+    ChatEventBase:
+      type: object
+      required: [type, run_id, sequence]
+      properties:
+        type:
+          type: string
+        run_id:
+          type: string
+        sequence:
+          type: integer
+          minimum: 0
+    ChatMetadataEvent:
+      allOf:
+        - $ref: "#/components/schemas/ChatEventBase"
+        - type: object
+          required: [type, scope]
+          properties:
+            type:
+              const: metadata
+            scope:
+              $ref: "#/components/schemas/ChatScope"
+    ChatDeltaEvent:
+      allOf:
+        - $ref: "#/components/schemas/ChatEventBase"
+        - type: object
+          required: [type, delta]
+          properties:
+            type:
+              const: delta
+            delta:
+              type: string
+    ChatCitationEvent:
+      allOf:
+        - $ref: "#/components/schemas/ChatEventBase"
+        - type: object
+          required: [type, citation]
+          properties:
+            type:
+              const: citation
+            citation:
+              $ref: "#/components/schemas/Citation"
+    ChatDoneEvent:
+      allOf:
+        - $ref: "#/components/schemas/ChatEventBase"
+        - type: object
+          required: [type, status]
+          properties:
+            type:
+              const: done
+            status:
+              type: string
+              enum: [completed, partial]
+    ChatErrorEvent:
+      allOf:
+        - $ref: "#/components/schemas/ChatEventBase"
+        - type: object
+          required: [type, error]
+          properties:
+            type:
+              const: error
+            error:
+              $ref: "#/components/schemas/ErrorBody"
+    Citation:
+      type: object
+      required: [content_id, title, source_location, quote_snippet]
+      properties:
+        content_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        title:
+          type: string
+        source_location:
+          type: string
+        quote_snippet:
+          type: string
+        url:
+          type: [string, "null"]
+          format: uri
+    DigestType:
+      type: string
+      enum: [daily, weekly, source, topic, manual]
+    DigestStatus:
+      type: string
+      enum: [draft, generating, ready, published, failed]
+    Digest:
+      type: object
+      required: [id, type, status, title, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          $ref: "#/components/schemas/DigestType"
+        status:
+          $ref: "#/components/schemas/DigestStatus"
+        title:
+          type: string
+        schedule:
+          type: [string, "null"]
+        published_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    DigestDetail:
+      allOf:
+        - $ref: "#/components/schemas/Digest"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DigestItem"
+    DigestItem:
+      type: object
+      required: [id, content, rank, reason, included]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        content:
+          $ref: "#/components/schemas/ContentSummary"
+        rank:
+          type: integer
+        reason:
+          type: string
+        included:
+          type: boolean
+          default: true
+        curator_comment:
+          type: [string, "null"]
+    DigestPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Digest"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    DigestCreateRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/DigestType"
+        title:
+          type: [string, "null"]
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        schedule:
+          type: [string, "null"]
+    DigestUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        schedule:
+          type: [string, "null"]
+        item_order:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        curation_items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DigestCurationItemUpdate"
+    DigestCurationItemUpdate:
+      type: object
+      required: [digest_item_id, rank, included]
+      properties:
+        digest_item_id:
+          $ref: "#/components/schemas/Uuid"
+        rank:
+          type: integer
+          minimum: 0
+        included:
+          type: boolean
+        curator_comment:
+          type: [string, "null"]
+    DigestPublishRequest:
+      type: object
+      properties:
+        create_public_share:
+          type: boolean
+          default: true
+    DigestPublishResponse:
+      type: object
+      required: [digest, job]
+      properties:
+        digest:
+          $ref: "#/components/schemas/DigestDetail"
+        share:
+          anyOf:
+            - $ref: "#/components/schemas/ShareLink"
+            - type: "null"
+        job:
+          $ref: "#/components/schemas/JobRun"
+    ShareTargetType:
+      type: string
+      enum: [content, collection, digest]
+    ShareScope:
+      type: string
+      enum: [summary_only, summary_and_extracted_text, digest_only]
+    ShareLink:
+      type: object
+      required: [id, target_type, target_id, scope, public_url, expires_at, revoked]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        target_type:
+          $ref: "#/components/schemas/ShareTargetType"
+        target_id:
+          $ref: "#/components/schemas/Uuid"
+        scope:
+          $ref: "#/components/schemas/ShareScope"
+        public_url:
+          type: string
+          format: uri
+        expires_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        revoked:
+          type: boolean
+        noindex:
+          type: boolean
+          default: true
+    ShareCreateRequest:
+      type: object
+      required: [target_type, target_id, scope]
+      properties:
+        target_type:
+          $ref: "#/components/schemas/ShareTargetType"
+        target_id:
+          $ref: "#/components/schemas/Uuid"
+        scope:
+          $ref: "#/components/schemas/ShareScope"
+        expires_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+    ShareLinkPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShareLink"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    PublicShareResponse:
+      oneOf:
+        - $ref: "#/components/schemas/ContentPublicShareResponse"
+        - $ref: "#/components/schemas/CollectionPublicShareResponse"
+        - $ref: "#/components/schemas/DigestPublicShareResponse"
+      discriminator:
+        propertyName: target_type
+        mapping:
+          content: "#/components/schemas/ContentPublicShareResponse"
+          collection: "#/components/schemas/CollectionPublicShareResponse"
+          digest: "#/components/schemas/DigestPublicShareResponse"
+    ContentPublicShareResponse:
+      type: object
+      required: [target_type, share, content, title, body, source_links, citations]
+      properties:
+        target_type:
+          const: content
+        share:
+          $ref: "#/components/schemas/ShareLink"
+        content:
+          $ref: "#/components/schemas/ContentSummary"
+        title:
+          type: string
+        body:
+          type: string
+          description: Summary-only or summary plus extracted text according to share.scope.
+        source_links:
+          type: array
+          items:
+            type: string
+            format: uri
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+    CollectionPublicShareResponse:
+      type: object
+      required: [target_type, share, collection, items, citations]
+      properties:
+        target_type:
+          const: collection
+        share:
+          $ref: "#/components/schemas/ShareLink"
+        collection:
+          $ref: "#/components/schemas/Collection"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentSummary"
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+    DigestPublicShareResponse:
+      type: object
+      required: [target_type, share, digest, items, citations]
+      properties:
+        target_type:
+          const: digest
+        share:
+          $ref: "#/components/schemas/ShareLink"
+        digest:
+          $ref: "#/components/schemas/Digest"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DigestItem"
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+    ExportFormat:
+      type: string
+      enum: [markdown]
+    ExportJob:
+      type: object
+      required: [id, format, status, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        signed_download_url:
+          type: [string, "null"]
+          format: uri
+        archive_mime_type:
+          type: string
+          const: application/zip
+        includes_assets:
+          type: boolean
+          description: True when images or thumbnails are included in the zip assets folder.
+        expires_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    ExportJobPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExportJob"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    ExportCreateRequest:
+      type: object
+      required: [scope]
+      properties:
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+          default: markdown
+        scope:
+          type: string
+          enum: [workspace, collection, selected_contents]
+        collection_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        content_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+    WebhookTargetKind:
+      type: string
+      enum: [custom, google_chat_incoming]
+      description: >
+        custom sends InfoSnack event payloads described by the OpenAPI webhooks
+        section and uses HMAC signing. google_chat_incoming sends a Google Chat
+        compatible message to a Google-issued incoming webhook URL and does not
+        use InfoSnack HMAC signing.
+    WebhookStatus:
+      type: string
+      enum: [enabled, disabled, failed]
+    WebhookEventType:
+      type: string
+      enum:
+        - digest.published
+        - source.failed
+        - source.needs_credential
+        - source.paused
+        - pipeline.failed
+    WebhookSubscription:
+      type: object
+      required: [id, name, target_url, target_kind, events, status, signing_secret_preview, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        name:
+          type: string
+        target_url:
+          type: string
+          format: uri
+        target_kind:
+          $ref: "#/components/schemas/WebhookTargetKind"
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+        status:
+          $ref: "#/components/schemas/WebhookStatus"
+        signing_secret_preview:
+          type: [string, "null"]
+          description: Redacted signing secret preview for custom targets. Null for google_chat_incoming targets.
+        last_success_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        last_failure_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    WebhookCreateRequest:
+      type: object
+      required: [name, target_url, events]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        target_url:
+          type: string
+          format: uri
+        target_kind:
+          $ref: "#/components/schemas/WebhookTargetKind"
+          default: custom
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+    WebhookUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        target_url:
+          type: string
+          format: uri
+        target_kind:
+          $ref: "#/components/schemas/WebhookTargetKind"
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+        status:
+          $ref: "#/components/schemas/WebhookStatus"
+        rotate_signing_secret:
+          type: boolean
+          default: false
+          description: Only valid for custom targets. When true, the response returns the new raw secret once in signing_secret_once.
+    WebhookCreateResponse:
+      type: object
+      required: [webhook, signing_secret_once]
+      properties:
+        webhook:
+          $ref: "#/components/schemas/WebhookSubscription"
+        signing_secret_once:
+          type: [string, "null"]
+          description: Raw HMAC secret returned once for custom targets. Null for google_chat_incoming targets. The value is never returned by list/detail responses.
+    WebhookUpdateResponse:
+      type: object
+      required: [webhook, signing_secret_once]
+      properties:
+        webhook:
+          $ref: "#/components/schemas/WebhookSubscription"
+        signing_secret_once:
+          type: [string, "null"]
+          description: Raw HMAC secret returned once when rotate_signing_secret=true for custom targets; otherwise null.
+    WebhookPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookSubscription"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    WebhookTestResult:
+      type: object
+      required: [webhook, delivery]
+      properties:
+        webhook:
+          $ref: "#/components/schemas/WebhookSubscription"
+        delivery:
+          $ref: "#/components/schemas/WebhookDelivery"
+    WebhookDelivery:
+      type: object
+      required: [id, channel, status, attempt_count, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        channel:
+          type: string
+          const: webhook
+        status:
+          type: string
+          enum: [queued, sending, delivered, failed, canceled]
+        event_type:
+          anyOf:
+            - $ref: "#/components/schemas/WebhookEventType"
+            - type: "null"
+        provider_message_id:
+          type: [string, "null"]
+        attempt_count:
+          type: integer
+          minimum: 0
+        last_error:
+          type: [string, "null"]
+          description: Redacted delivery error.
+        delivered_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    WebhookDeliveryPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookDelivery"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    Notification:
+      type: object
+      required: [id, type, title, created_at, read]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          type: string
+          enum: [source_paused, source_needs_credential, digest_ready, job_failed, share_viewed]
+        title:
+          type: string
+        body:
+          type: [string, "null"]
+        read:
+          type: boolean
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    NotificationPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    NotificationSettings:
+      type: object
+      required: [in_app_enabled, webhook_enabled]
+      properties:
+        in_app_enabled:
+          type: boolean
+        webhook_enabled:
+          type: boolean
+        digest_webhook_enabled:
+          type: boolean
+        source_failure_webhook_enabled:
+          type: boolean
+    NotificationSettingsUpdateRequest:
+      type: object
+      properties:
+        in_app_enabled:
+          type: boolean
+        webhook_enabled:
+          type: boolean
+        digest_webhook_enabled:
+          type: boolean
+        source_failure_webhook_enabled:
+          type: boolean
+    ExtensionAuthCode:
+      type: object
+      required: [code, expires_at]
+      properties:
+        code:
+          type: string
+        expires_at:
+          $ref: "#/components/schemas/DateTime"
+    ExtensionAuthExchangeRequest:
+      type: object
+      required: [code, extension_id]
+      properties:
+        code:
+          type: string
+        extension_id:
+          type: string
+    ExtensionTokenResponse:
+      type: object
+      required: [access_token, token_type, scopes, expires_at]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          const: bearer
+        scopes:
+          type: array
+          items:
+            type: string
+            enum: ["capture:create", "content:read:minimal"]
+        expires_at:
+          $ref: "#/components/schemas/DateTime"
+    JobStatus:
+      type: string
+      enum: [queued, running, retrying, completed, failed, stale, canceled]
+    JobRun:
+      type: object
+      required: [id, queue, status, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        queue:
+          type: string
+          enum: [ingest, ai, embedding, source, digest, export, maintenance]
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        idempotency_key:
+          type: [string, "null"]
+        heartbeat_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        redacted_error:
+          type: [string, "null"]
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+        finished_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+    JobRunPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRun"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    AuditEvent:
+      type: object
+      required: [id, action, actor_id, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        action:
+          type: string
+        actor_id:
+          anyOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        target_type:
+          type: string
+        target_id:
+          type: [string, "null"]
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    AuditEventPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    DashboardResponse:
+      type: object
+      required: [stats, processing, recent_contents, unread_contents, trend_tags, digest, source_health]
+      properties:
+        stats:
+          $ref: "#/components/schemas/DashboardStats"
+        processing:
+          type: object
+          additionalProperties:
+            type: integer
+        recent_contents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentSummary"
+        unread_contents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentSummary"
+        trend_tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        digest:
+          anyOf:
+            - $ref: "#/components/schemas/Digest"
+            - type: "null"
+        source_health:
+          type: object
+          required: [healthy, paused, needs_credential, failed]
+          properties:
+            healthy:
+              type: integer
+            paused:
+              type: integer
+            needs_credential:
+              type: integer
+            failed:
+              type: integer
+    DashboardStats:
+      type: object
+      required: [weekly_capture_count, unread_count, previous_week_capture_delta]
+      properties:
+        weekly_capture_count:
+          type: integer
+          minimum: 0
+        unread_count:
+          type: integer
+          minimum: 0
+        previous_week_capture_delta:
+          type: integer
+    AdminUser:
+      type: object
+      required: [id, email, name, locale, is_super_admin, locked_until, deleted_at, membership_count, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        locale:
+          type: string
+          enum: [ko, en]
+        is_super_admin:
+          type: boolean
+        locked_until:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        deleted_at:
+          anyOf:
+            - $ref: "#/components/schemas/DateTime"
+            - type: "null"
+        membership_count:
+          type: integer
+          minimum: 0
+        created_at:
+          $ref: "#/components/schemas/DateTime"
+    AdminUserPage:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        next_cursor:
+          type: [string, "null"]
+        has_more:
+          type: boolean
+    AdminOverview:
+      type: object
+      required: [active_users, captures, failures, cost_estimate]
+      properties:
+        active_users:
+          type: integer
+        captures:
+          type: integer
+        failures:
+          type: integer
+        cost_estimate:
+          type: number
+    ModelAdminState:
+      type: object
+      required: [providers, usage]
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          additionalProperties: true
+    StorageAdminState:
+      type: object
+      required: [object_count, bytes_used, purge_jobs]
+      properties:
+        object_count:
+          type: integer
+        bytes_used:
+          type: integer
+        purge_jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRun"
+    DigestPublishedEvent:
+      type: object
+      required: [event_type, event_id, occurred_at, workspace_id, digest]
+      properties:
+        event_type:
+          const: digest.published
+        event_id:
+          $ref: "#/components/schemas/Uuid"
+        occurred_at:
+          $ref: "#/components/schemas/DateTime"
+        workspace_id:
+          $ref: "#/components/schemas/Uuid"
+        digest:
+          $ref: "#/components/schemas/Digest"
+    SourceFailedEvent:
+      type: object
+      required: [event_type, event_id, occurred_at, workspace_id, source, redacted_error]
+      properties:
+        event_type:
+          type: string
+          enum: [source.failed, source.needs_credential, source.paused]
+        event_id:
+          $ref: "#/components/schemas/Uuid"
+        occurred_at:
+          $ref: "#/components/schemas/DateTime"
+        workspace_id:
+          $ref: "#/components/schemas/Uuid"
+        source:
+          $ref: "#/components/schemas/Source"
+        redacted_error:
+          type: string
+    PipelineFailedEvent:
+      type: object
+      required: [event_type, event_id, occurred_at, workspace_id, content_id, job_run_id, redacted_error]
+      properties:
+        event_type:
+          const: pipeline.failed
+        event_id:
+          $ref: "#/components/schemas/Uuid"
+        occurred_at:
+          $ref: "#/components/schemas/DateTime"
+        workspace_id:
+          $ref: "#/components/schemas/Uuid"
+        content_id:
+          $ref: "#/components/schemas/Uuid"
+        job_run_id:
+          $ref: "#/components/schemas/Uuid"
+        redacted_error:
+          type: string

@@ -1,0 +1,4 @@
+
+> infosnack-frontend@0.1.0 typecheck /Users/chester/dev/infosnack/frontend
+> tsc --noEmit
+

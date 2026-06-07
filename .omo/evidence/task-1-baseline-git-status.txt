@@ -1,0 +1,20 @@
+ M AGENTS.md
+ M docs/AGENTS.md
+?? .env.example
+?? .gitignore
+?? .omo/
+?? docker-compose.infra.yml
+?? docker/
+?? docs/InfoSnack_PRD_v3.0.md
+?? "docs/InfoSnack_\354\236\220\353\217\231\354\210\230\354\247\221_\352\270\260\355\232\215\354\204\234_v1.0.md"
+?? "docs/InfoSnack_\355\231\224\353\251\264\354\204\244\352\263\204.md"
+?? docs/backup/
+?? docs/openapi/infosnack-api.yaml
+?? scripts/
+!! .DS_Store
+!! ".InfoSnack_\355\231\224\353\251\264\354\204\244\352\263\204.md.swp"
+!! .env
+!! docker/.DS_Store
+!! docker/postgres/.DS_Store
+!! docs/.DS_Store
+!! docs/backup/.DS_Store
